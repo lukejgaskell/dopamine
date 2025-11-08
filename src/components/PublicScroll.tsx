@@ -195,7 +195,7 @@ export default function PublicScroll() {
         const state = scrollChannel.presenceState();
         const users = Object.keys(state).map((key) => {
           const presence = state[key];
-          return presence[0]?.name || key;
+          return (presence[0] as any)?.name || key;
         });
         setActiveUsers(users);
       })
