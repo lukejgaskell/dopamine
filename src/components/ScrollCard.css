@@ -1,0 +1,129 @@
+.scroll-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.scroll-card:hover {
+  border-color: var(--border-color-hover);
+  transform: translateY(-2px);
+}
+
+.scroll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.scroll-name {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.scroll-id {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.scroll-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scroll-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scroll-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.scroll-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-draft {
+  background-color: var(--status-draft-bg);
+  color: var(--status-draft-text);
+}
+
+.status-active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+
+.status-completed {
+  background-color: var(--status-completed-bg);
+  color: var(--status-completed-text);
+}
+
+.scroll-date {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.scroll-share-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.scroll-share-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scroll-share-link-container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scroll-share-input {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.scroll-share-input:focus {
+  outline: none;
+  border-color: var(--border-color-hover);
+}
+
+.scroll-copy-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--primary-text);
+  background-color: var(--primary-bg);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.scroll-copy-button:hover {
+  background-color: var(--primary-bg-hover);
+}

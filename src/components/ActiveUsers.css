@@ -1,0 +1,93 @@
+.active-users-container {
+  position: fixed;
+  top: 5.5rem;
+  left: 1rem;
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem;
+  z-index: 100;
+  max-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.active-users-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.active-users-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--status-active-bg);
+  color: var(--status-active-text);
+  border-radius: 50%;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.active-users-label {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.active-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.active-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.active-user:hover {
+  background-color: var(--bg-secondary);
+}
+
+.active-user.is-you {
+  background-color: var(--status-active-bg);
+}
+
+.active-user.is-you .active-user-name {
+  color: var(--status-active-text);
+  font-weight: 500;
+}
+
+.active-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  border-radius: 50%;
+  font-size: 0.625rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.active-user.is-you .active-user-avatar {
+  background-color: var(--status-active-text);
+}
+
+.active-user-name {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

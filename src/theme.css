@@ -1,0 +1,78 @@
+/* Theme CSS Variables */
+:root {
+  /* Light mode colors - Warm tan palette */
+  --bg-primary: #f8f4ed;
+  --bg-secondary: #f0ead9;
+  --bg-tertiary: #e8dfc9;
+  --bg-card: #faf7f0;
+  --bg-card-hover: #f5f1e8;
+
+  --text-primary: #2d2620;
+  --text-secondary: #6b5d4f;
+  --text-tertiary: #9b8b7a;
+
+  --border-color: #ddd4c3;
+  --border-color-hover: #646cff;
+
+  --input-bg: #fdfbf7;
+  --input-border: #d8cfbe;
+
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Status colors (same for both modes) */
+  --status-draft-bg: rgba(136, 136, 136, 0.15);
+  --status-draft-text: #666666;
+
+  --status-active-bg: rgba(76, 175, 80, 0.15);
+  --status-active-text: #2e7d32;
+
+  --status-completed-bg: rgba(33, 150, 243, 0.15);
+  --status-completed-text: #1565c0;
+
+  /* Action colors */
+  --primary-bg: #646cff;
+  --primary-bg-hover: #535bf2;
+  --primary-text: #ffffff;
+
+  --danger-bg: #ff4444;
+  --danger-bg-hover: #cc0000;
+  --danger-text: #ffffff;
+
+  --error-bg: #ff4444;
+  --error-text: #ffffff;
+
+  --success-bg: #4caf50;
+  --success-text: #ffffff;
+}
+
+/* Dark mode colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #242424;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #151515;
+    --bg-card: #1a1a1a;
+    --bg-card-hover: #252525;
+
+    --text-primary: rgba(255, 255, 255, 0.87);
+    --text-secondary: #888888;
+    --text-tertiary: #666666;
+
+    --border-color: #333333;
+    --border-color-hover: #646cff;
+
+    --input-bg: #242424;
+    --input-border: #333333;
+
+    --modal-overlay: rgba(0, 0, 0, 0.7);
+
+    --status-draft-bg: rgba(136, 136, 136, 0.2);
+    --status-draft-text: #888888;
+
+    --status-active-bg: rgba(76, 175, 80, 0.2);
+    --status-active-text: #4caf50;
+
+    --status-completed-bg: rgba(33, 150, 243, 0.2);
+    --status-completed-text: #2196f3;
+  }
+}

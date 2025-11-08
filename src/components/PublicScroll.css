@@ -1,0 +1,151 @@
+.public-scroll-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(6, 182, 212, 0.05) 100%);
+}
+
+.public-scroll-user-info {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--primary-bg);
+  border: 1px solid var(--primary-bg);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-scroll-user-info:hover {
+  background-color: var(--primary-bg-hover);
+  transform: scale(1.05);
+}
+
+.public-scroll-user-name {
+  color: var(--primary-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.public-scroll-loading,
+.public-scroll-error {
+  text-align: center;
+  padding: 3rem;
+}
+
+.public-scroll-error h2 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.public-scroll-error p {
+  color: var(--text-secondary);
+}
+
+.public-scroll-header {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 1rem 2rem;
+  padding-right: 6rem;
+  background-color: var(--bg-primary);
+  border-bottom: 2px solid var(--border-color);
+  flex-shrink: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.public-scroll-header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.public-scroll-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-scroll-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.public-scroll-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.continue-voting-btn {
+  padding: 0.625rem 1.5rem;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.continue-voting-btn:hover:not(:disabled) {
+  background-color: var(--primary-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.continue-voting-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.public-scroll-canvas {
+  flex: 1;
+  position: relative;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.ideas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.ideas-empty p {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.new-idea-fixed {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  z-index: 900;
+}
