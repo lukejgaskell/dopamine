@@ -1,3 +1,5 @@
+import type { ModuleConfig } from './module'
+
 export interface Scroll {
   id: string
   created_at: string
@@ -7,4 +9,5 @@ export interface Scroll {
   key: string
   status: string
   step: string
+  modules: ModuleConfig[]
 }

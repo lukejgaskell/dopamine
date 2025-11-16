@@ -1,0 +1,60 @@
+.module-config-editor {
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0 0 8px 8px;
+  border: 2px solid var(--primary-bg);
+  border-top: none;
+  margin-top: -2px;
+}
+
+.config-field {
+  margin-bottom: 1rem;
+}
+
+.config-field:last-child {
+  margin-bottom: 0;
+}
+
+.config-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.config-field input[type="text"],
+.config-field input[type="number"],
+.config-field select,
+.config-field textarea {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.config-field input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.config-field label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.config-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.config-field input:focus,
+.config-field select:focus,
+.config-field textarea:focus {
+  outline: none;
+  border-color: var(--primary-bg);
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Scroll } from '../types/scroll'
 import './ScrollCard.css'
 
@@ -9,6 +10,7 @@ interface ScrollCardProps {
 
 export default function ScrollCard({ scroll, onClick }: ScrollCardProps) {
   const [copied, setCopied] = useState(false)
+  const navigate = useNavigate()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -32,6 +34,11 @@ export default function ScrollCard({ scroll, onClick }: ScrollCardProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const handleViewResults = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigate(`/results/${scroll.id}`)
   }
 
   const shareableLink = scroll.status === 'active' ? getShareableLink() : null
@@ -73,6 +80,17 @@ export default function ScrollCard({ scroll, onClick }: ScrollCardProps) {
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
+        </div>
+      )}
+
+      {scroll.status === 'completed' && (
+        <div className="scroll-results-section">
+          <button
+            onClick={handleViewResults}
+            className="view-results-button"
+          >
+            View Results
+          </button>
         </div>
       )}
     </div>

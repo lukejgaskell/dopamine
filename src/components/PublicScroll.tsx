@@ -7,11 +7,10 @@ import type { Idea } from "../types/idea";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import NamePrompt from "./NamePrompt";
 import ActiveUsers from "./ActiveUsers";
-import NewIdeaForm from "./NewIdeaForm";
-import IdeaCard from "./IdeaCard";
-import VotingView from "./VotingView";
-import ResultsView from "./ResultsView";
+import ModuleRenderer from "./ModuleRenderer";
+import ModuleTimer from "./ModuleTimer";
 import Logo from "./Logo";
+import ScrollResults from "./ScrollResults";
 import "./PublicScroll.css";
 
 export default function PublicScroll() {
@@ -28,56 +27,62 @@ export default function PublicScroll() {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
-  const [completing, setCompleting] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  const fetchScrollData = async () => {
+    if (!id || !key) {
+      setError("Invalid scroll link");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Get current session to check if user is owner
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      const { data, error } = await supabase
+        .from("scrolls")
+        .select("*")
+        .eq("id", id)
+        .eq("key", key)
+        .in("status", ["active", "completed"])
+        .single();
+
+      if (error) throw error;
+
+      if (!data) {
+        setError("Scroll not found or not active");
+      } else {
+        setScroll(data);
+        // Check if current user is the owner
+        if (sessionData?.session?.user?.id === data.user_id) {
+          setIsOwner(true);
+        }
+        // Initialize current module from step if it's a number
+        if (data.step && !isNaN(parseInt(data.step))) {
+          setCurrentModuleIndex(parseInt(data.step));
+        }
+      }
+    } catch (error: any) {
+      setError("Scroll not found or not active");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchScroll = async () => {
-      if (!id || !key) {
-        setError("Invalid scroll link");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Get current session to check if user is owner
-        const { data: sessionData } = await supabase.auth.getSession();
-
-        const { data, error } = await supabase
-          .from("scrolls")
-          .select("*")
-          .eq("id", id)
-          .eq("key", key)
-          .in("status", ["active"])
-          .single();
-
-        if (error) throw error;
-
-        if (!data) {
-          setError("Scroll not found or not active");
-        } else {
-          setScroll(data);
-          // Check if current user is the owner
-          if (sessionData?.session?.user?.id === data.user_id) {
-            setIsOwner(true);
-          }
-        }
-      } catch (error: any) {
-        setError("Scroll not found or not active");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScroll();
+    fetchScrollData();
   }, [id, key]);
 
   useEffect(() => {
     // Show name prompt if user doesn't have a name and scroll is loaded
-    if (!name && scroll && !loading) {
+    // Skip if user is the owner - they'll be "host"
+    if (!name && scroll && !loading && !isOwner) {
       setShowNamePrompt(true);
     }
-  }, [name, scroll, loading]);
+  }, [name, scroll, loading, isOwner]);
 
   // Fetch initial ideas
   useEffect(() => {
@@ -168,7 +173,12 @@ export default function PublicScroll() {
           filter: `id=eq.${id}`,
         },
         (payload) => {
-          setScroll(payload.new as Scroll);
+          const updatedScroll = payload.new as Scroll;
+          setScroll(updatedScroll);
+          // Update current module index from step
+          if (updatedScroll.step && !isNaN(parseInt(updatedScroll.step))) {
+            setCurrentModuleIndex(parseInt(updatedScroll.step));
+          }
         }
       )
       .subscribe();
@@ -180,12 +190,16 @@ export default function PublicScroll() {
 
   // Set up real-time presence
   useEffect(() => {
-    if (!id || !name || !scroll) return;
+    if (!id || !scroll) return;
+
+    // Determine the display name for presence
+    const displayName = isOwner ? "host" : name;
+    if (!displayName) return;
 
     const scrollChannel = supabase.channel(`scroll:${id}`, {
       config: {
         presence: {
-          key: name,
+          key: displayName,
         },
       },
     });
@@ -201,7 +215,7 @@ export default function PublicScroll() {
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await scrollChannel.track({ name });
+          await scrollChannel.track({ name: displayName });
         }
       });
 
@@ -210,7 +224,7 @@ export default function PublicScroll() {
     return () => {
       scrollChannel.unsubscribe();
     };
-  }, [id, name, scroll]);
+  }, [id, name, scroll, isOwner]);
 
   const handleNameSubmit = async (submittedName: string) => {
     setName(submittedName);
@@ -219,6 +233,52 @@ export default function PublicScroll() {
     // Update presence with new name
     if (channel && submittedName) {
       await channel.track({ name: submittedName });
+    }
+  };
+
+  // Get the display name for the current user
+  const currentUserDisplayName = isOwner ? "host" : name;
+
+  const handleNextModule = async () => {
+    if (!scroll || !isOwner || !scroll.modules) return;
+
+    const nextIndex = currentModuleIndex + 1;
+    if (nextIndex >= scroll.modules.length) return;
+
+    setTransitioning(true);
+    try {
+      const { error } = await supabase
+        .from("scrolls")
+        .update({ step: nextIndex.toString() })
+        .eq("id", scroll.id);
+
+      if (error) throw error;
+      setCurrentModuleIndex(nextIndex);
+    } catch (error: any) {
+      console.error("Error advancing module:", error);
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handlePrevModule = async () => {
+    if (!scroll || !isOwner || currentModuleIndex <= 0) return;
+
+    const prevIndex = currentModuleIndex - 1;
+
+    setTransitioning(true);
+    try {
+      const { error } = await supabase
+        .from("scrolls")
+        .update({ step: prevIndex.toString() })
+        .eq("id", scroll.id);
+
+      if (error) throw error;
+      setCurrentModuleIndex(prevIndex);
+    } catch (error: any) {
+      console.error("Error going back:", error);
+    } finally {
+      setTransitioning(false);
     }
   };
 
@@ -249,41 +309,71 @@ export default function PublicScroll() {
     setShowNamePrompt(false);
   };
 
-  const handleContinueToVoting = async () => {
+  const currentModule = scroll.modules?.[currentModuleIndex];
+  const hasNextModule = scroll.modules && currentModuleIndex < scroll.modules.length - 1;
+  const hasPrevModule = currentModuleIndex > 0;
+  const hasTimer = currentModule?.type === 'brainstorm' && (currentModule as any).timeLimit;
+
+  const handleShowResults = async () => {
+    // Refresh scroll data to get latest results before showing
+    console.log('Before refresh - scroll modules:', scroll?.modules);
+    await fetchScrollData();
+    console.log('After refresh - scroll modules:', scroll?.modules);
+    setShowResults(true);
+  };
+
+  const handleCompleteSession = async () => {
     if (!scroll || !isOwner) return;
 
     setTransitioning(true);
     try {
       const { error } = await supabase
         .from("scrolls")
-        .update({ step: "voting" })
+        .update({ status: "completed" })
         .eq("id", scroll.id);
 
       if (error) throw error;
+
+      // Show results after completing
+      await fetchScrollData();
+      setShowResults(true);
     } catch (error: any) {
-      console.error("Error transitioning to voting:", error);
+      console.error("Error completing session:", error);
     } finally {
       setTransitioning(false);
     }
   };
 
-  const handleCompleteVoting = async () => {
-    if (!scroll || !isOwner) return;
-
-    setCompleting(true);
-    try {
-      const { error } = await supabase
-        .from("scrolls")
-        .update({ step: "results" })
-        .eq("id", scroll.id);
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Error completing voting:", error);
-    } finally {
-      setCompleting(false);
-    }
-  };
+  // Show results view
+  if (showResults && scroll.modules) {
+    return (
+      <div className="public-scroll-container">
+        <header className="public-scroll-header">
+          <div className="public-scroll-header-left">
+            <Logo size="small" />
+          </div>
+          <div className="public-scroll-header-center">
+            <h1 className="public-scroll-title">{scroll.name}</h1>
+            <div className="module-indicator">Results</div>
+          </div>
+          <div className="public-scroll-header-right">
+            <button
+              className="nav-btn prev"
+              onClick={() => setShowResults(false)}
+            >
+              Back to Session
+            </button>
+          </div>
+        </header>
+        <main className="public-scroll-main">
+          <ScrollResults
+            modules={scroll.modules}
+            ideas={ideas}
+          />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="public-scroll-container">
@@ -295,13 +385,20 @@ export default function PublicScroll() {
         />
       )}
 
-      {name && activeUsers.length > 0 && (
-        <ActiveUsers users={activeUsers} currentUserName={name} />
+      {currentUserDisplayName && activeUsers.length > 0 && (
+        <ActiveUsers users={activeUsers} currentUserName={currentUserDisplayName} />
       )}
 
-      {name && (
-        <div className="public-scroll-user-info" onClick={handleNameClick}>
-          <span className="public-scroll-user-name">{name}</span>
+      {hasTimer && (
+        <div className="sidebar-timer">
+          <ModuleTimer
+            timeLimit={(currentModule as any).timeLimit}
+            isHost={isOwner}
+            scrollId={scroll.id}
+            moduleIndex={currentModuleIndex}
+            modules={scroll.modules}
+            timerState={(currentModule as any).timerState}
+          />
         </div>
       )}
 
@@ -311,52 +408,75 @@ export default function PublicScroll() {
         </div>
         <div className="public-scroll-header-center">
           <h1 className="public-scroll-title">{scroll.name}</h1>
+          {scroll.modules && scroll.modules.length > 0 && (
+            <div className="module-indicator">
+              {currentModuleIndex + 1} / {scroll.modules.length}
+            </div>
+          )}
         </div>
         <div className="public-scroll-header-right">
-          {isOwner && scroll.step !== "voting" && scroll.step !== "results" && (
-            <button
-              className="continue-voting-btn"
-              onClick={handleContinueToVoting}
-              disabled={transitioning}
-            >
-              {transitioning ? "Transitioning..." : "Continue to Voting"}
-            </button>
+          {isOwner && (
+            <div className="host-controls">
+              {hasPrevModule && (
+                <button
+                  className="nav-btn prev"
+                  onClick={handlePrevModule}
+                  disabled={transitioning}
+                >
+                  Previous
+                </button>
+              )}
+              {hasNextModule && (
+                <button
+                  className="nav-btn next"
+                  onClick={handleNextModule}
+                  disabled={transitioning}
+                >
+                  {transitioning ? "..." : "Next"}
+                </button>
+              )}
+              {!hasNextModule && (
+                <button
+                  className="nav-btn complete"
+                  onClick={handleCompleteSession}
+                  disabled={transitioning}
+                >
+                  {transitioning ? "..." : "Complete"}
+                </button>
+              )}
+              <button
+                className="nav-btn results"
+                onClick={handleShowResults}
+              >
+                Results
+              </button>
+            </div>
           )}
-          {isOwner && scroll.step === "voting" && (
-            <button
-              className="continue-voting-btn"
-              onClick={handleCompleteVoting}
-              disabled={completing}
-            >
-              {completing ? "Completing..." : "Complete"}
-            </button>
+          {currentUserDisplayName && (
+            <div className="public-scroll-user-info" onClick={isOwner ? undefined : handleNameClick} style={isOwner ? { cursor: 'default' } : undefined}>
+              <span className="public-scroll-user-name">{currentUserDisplayName}</span>
+            </div>
           )}
         </div>
       </header>
 
-      {scroll.step === "voting" ? (
-        <VotingView ideas={ideas} scrollId={scroll.id} />
-      ) : scroll.step === "results" ? (
-        <ResultsView ideas={ideas} />
-      ) : (
-        <>
-          <div className="public-scroll-canvas">
-            {ideas.length === 0 ? (
-              <div className="ideas-empty">
-                <p>No ideas yet. Be the first to share one!</p>
-              </div>
-            ) : (
-              ideas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
-            )}
+      <main className="public-scroll-main">
+        {currentModule ? (
+          <ModuleRenderer
+            module={currentModule}
+            scrollId={scroll.id}
+            ideas={ideas}
+            isHost={isOwner}
+            userName={currentUserDisplayName}
+            moduleIndex={currentModuleIndex}
+            modules={scroll.modules}
+          />
+        ) : (
+          <div className="no-modules">
+            <p>No modules configured for this scroll.</p>
           </div>
-
-          {name && (
-            <div className="new-idea-fixed">
-              <NewIdeaForm scrollId={scroll.id} />
-            </div>
-          )}
-        </>
-      )}
+        )}
+      </main>
     </div>
   );
 }

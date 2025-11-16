@@ -1,7 +1,7 @@
 .active-users-container {
   position: fixed;
-  top: 5.5rem;
-  left: 1rem;
+  bottom: 2rem;
+  right: 1rem;
   background-color: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: 12px;

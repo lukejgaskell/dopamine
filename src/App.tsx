@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js'
 import Auth from './components/Auth'
 import Scrolls from './components/Scrolls'
 import PublicScroll from './components/PublicScroll'
+import ScrollResultsPage from './components/ScrollResultsPage'
 import './App.css'
 
 function Dashboard({ session }: { session: Session }) {
@@ -55,6 +56,14 @@ function App() {
       <Routes>
         {/* Public route for viewing active scrolls */}
         <Route path="/scroll/:id" element={<PublicScroll />} />
+
+        {/* Results page (requires auth) */}
+        <Route
+          path="/results/:id"
+          element={
+            session ? <ScrollResultsPage /> : <Navigate to="/" replace />
+          }
+        />
 
         {/* Protected routes */}
         <Route

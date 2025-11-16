@@ -8,30 +8,36 @@
 }
 
 .public-scroll-user-info {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
   background-color: var(--primary-bg);
-  border: 1px solid var(--primary-bg);
+  border: none;
   border-radius: 20px;
   padding: 0.5rem 1rem;
-  z-index: 1000;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+}
+
+.public-scroll-user-info::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #4ade80;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.6);
 }
 
 .public-scroll-user-info:hover {
   background-color: var(--primary-bg-hover);
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .public-scroll-user-name {
   color: var(--primary-text);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -57,7 +63,6 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 1rem 2rem;
-  padding-right: 6rem;
   background-color: var(--bg-primary);
   border-bottom: 2px solid var(--border-color);
   flex-shrink: 0;
@@ -74,6 +79,7 @@
 
 .public-scroll-header-center {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -92,6 +98,17 @@
   color: var(--text-primary);
   line-height: 1.2;
   text-align: center;
+}
+
+.module-indicator {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+  letter-spacing: 0.5px;
 }
 
 .continue-voting-btn {
@@ -119,18 +136,100 @@
   transform: none;
 }
 
+.host-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn.prev {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.nav-btn.prev:hover:not(:disabled) {
+  background-color: var(--border-color);
+}
+
+.nav-btn.next {
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.nav-btn.next:hover:not(:disabled) {
+  background-color: var(--primary-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.nav-btn.results {
+  background-color: var(--status-active-bg);
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.2);
+}
+
+.nav-btn.results:hover:not(:disabled) {
+  background-color: #22c55e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.nav-btn.complete {
+  background-color: #f59e0b;
+  color: white;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.nav-btn.complete:hover:not(:disabled) {
+  background-color: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.nav-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.public-scroll-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .public-scroll-canvas {
   flex: 1;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   padding: 2rem;
+  padding-bottom: 8rem;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .ideas-empty {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   text-align: center;
   color: var(--text-secondary);
 }
@@ -148,4 +247,25 @@
   width: 90%;
   max-width: 600px;
   z-index: 900;
+}
+
+.no-modules {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.no-modules p {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.sidebar-timer {
+  position: fixed;
+  bottom: 2rem;
+  left: 1rem;
+  z-index: 100;
 }
