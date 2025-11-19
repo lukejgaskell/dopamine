@@ -1,0 +1,95 @@
+.trend-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.trend-card:hover {
+  border-color: var(--border-color-hover);
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.trend-name {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.trend-id {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.trend-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trend-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trend-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.trend-module-count {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+.trend-date {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.trend-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trend-action-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trend-action-button:hover {
+  transform: translateY(-1px);
+}
+
+.trend-action-button.edit-button {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.trend-action-button.edit-button:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color-hover);
+}

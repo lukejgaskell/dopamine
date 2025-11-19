@@ -2,13 +2,19 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
-import Auth from './components/Auth'
-import Scrolls from './components/Scrolls'
-import PublicScroll from './components/PublicScroll'
-import ScrollResultsPage from './components/ScrollResultsPage'
+import { Auth } from './components/Auth'
+import { Scrolls } from './components/Scrolls'
+import { Trends } from './components/Trends'
+import { Datasets } from './components/Datasets'
+import { PublicScroll } from './components/PublicScroll'
+import { ScrollResultsPage } from './components/ScrollResultsPage'
 import './App.css'
 
+type DashboardView = 'scrolls' | 'trends' | 'datasets'
+
 function Dashboard({ session }: { session: Session }) {
+  const [activeView, setActiveView] = useState<DashboardView>('scrolls')
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
   }
@@ -21,7 +27,29 @@ function Dashboard({ session }: { session: Session }) {
           Sign Out
         </button>
       </div>
-      <Scrolls />
+      <div className="dashboard-navigation">
+        <button
+          className={`nav-tab ${activeView === 'scrolls' ? 'active' : ''}`}
+          onClick={() => setActiveView('scrolls')}
+        >
+          Scrolls
+        </button>
+        <button
+          className={`nav-tab ${activeView === 'trends' ? 'active' : ''}`}
+          onClick={() => setActiveView('trends')}
+        >
+          Trends
+        </button>
+        <button
+          className={`nav-tab ${activeView === 'datasets' ? 'active' : ''}`}
+          onClick={() => setActiveView('datasets')}
+        >
+          Datasets
+        </button>
+      </div>
+      {activeView === 'scrolls' && <Scrolls />}
+      {activeView === 'trends' && <Trends />}
+      {activeView === 'datasets' && <Datasets />}
     </>
   )
 }

@@ -41,6 +41,36 @@
   background-color: var(--danger-bg-hover);
 }
 
+.dashboard-navigation {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background-color: var(--bg-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.nav-tab {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+}
+
+.nav-tab.active {
+  color: var(--primary-bg);
+  border-bottom-color: var(--primary-bg);
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

@@ -18,7 +18,7 @@ All colors are defined in `src/theme.css` using CSS variables:
 
 ### Tables
 1. **scrolls**
-   - id, created_at, user_id, name, type, key, status
+   - id, created_at, user_id, name, key, status, step, modules
    - RLS: Authenticated users CRUD their own; anon users SELECT active scrolls
 
 2. **ideas**
@@ -55,8 +55,13 @@ All colors are defined in `src/theme.css` using CSS variables:
 5. Views randomly positioned idea cards in canvas
 
 ### Component Organization
-- `/components` - All React components
-- `/types` - TypeScript interfaces (Scroll, Idea)
+- `/components` - All React components (folder-based structure)
+  - Each component has its own folder: `ComponentName/`
+  - Contains: `ComponentName.tsx`, `ComponentName.css`, `index.ts`
+  - **Always use named exports**, not default exports
+  - Index file pattern: `export { ComponentName } from './ComponentName'`
+  - Subfolder for specialized components: `/results` for result rendering components
+- `/types` - TypeScript interfaces (Scroll, Idea, Module)
 - `/store` - Zustand stores
 - `/lib` - Supabase client setup
 
@@ -80,22 +85,47 @@ All colors are defined in `src/theme.css` using CSS variables:
 ```
 src/
 ├── components/
-│   ├── Auth.tsx/css - Login/signup
-│   ├── Scrolls.tsx/css - Scroll list (authenticated)
-│   ├── ScrollCard.tsx/css - Individual scroll card
-│   ├── PublicScroll.tsx/css - Public scroll view
-│   ├── ActiveUsers.tsx/css - Realtime presence display
-│   ├── IdeaCard.tsx/css - Individual idea card
-│   ├── NewIdeaForm.tsx/css - Create idea form
-│   ├── NamePrompt.tsx/css - Name entry modal
-│   └── EditScrollForm.tsx - Edit scroll modal
+│   ├── Auth/
+│   │   ├── Auth.tsx - Login/signup
+│   │   ├── Auth.css
+│   │   └── index.ts
+│   ├── Scrolls/
+│   │   ├── Scrolls.tsx - Scroll list (authenticated)
+│   │   ├── Scrolls.css
+│   │   └── index.ts
+│   ├── ScrollCard/
+│   │   ├── ScrollCard.tsx - Individual scroll card
+│   │   ├── ScrollCard.css
+│   │   └── index.ts
+│   ├── PublicScroll/
+│   │   ├── PublicScroll.tsx - Public scroll view
+│   │   ├── PublicScroll.css
+│   │   └── index.ts
+│   ├── ActiveUsers/
+│   │   ├── ActiveUsers.tsx - Realtime presence display
+│   │   ├── ActiveUsers.css
+│   │   └── index.ts
+│   ├── ModuleRenderer/
+│   │   ├── ModuleRenderer.tsx - Module display logic
+│   │   ├── ModuleRenderer.css
+│   │   └── index.ts
+│   ├── results/
+│   │   ├── ModuleResultsRenderer/
+│   │   │   ├── ModuleResultsRenderer.tsx
+│   │   │   └── index.ts
+│   │   ├── SimpleVoteResults/
+│   │   │   ├── SimpleVoteResults.tsx
+│   │   │   └── index.ts
+│   │   └── ResultsCommon.css - Shared results styling
+│   └── ... (other components follow same pattern)
 ├── lib/
 │   └── supabase.ts - Supabase client
 ├── store/
 │   └── userStore.ts - Zustand user state
 ├── types/
 │   ├── scroll.ts - Scroll interface
-│   └── idea.ts - Idea interface
+│   ├── idea.ts - Idea interface
+│   └── module.ts - Module types
 ├── theme.css - Global theme variables
 ├── index.css - Global base styles
 ├── App.tsx/css - Main app router
@@ -114,6 +144,30 @@ src/
 3. Clean up in return function
 
 ### Creating new component
-1. Create `.tsx` and `.css` files in `components/`
-2. Use theme variables for all colors
-3. Export default function
+1. Create a new folder in `components/`: `ComponentName/`
+2. Create three files in the folder:
+   - `ComponentName.tsx` - Component logic with **named export**
+   - `ComponentName.css` - Component styles (use theme variables for all colors)
+   - `index.ts` - Export file
+3. Component file structure:
+   ```typescript
+   // ComponentName.tsx
+   import './ComponentName.css'
+
+   interface ComponentNameProps {
+     // props here
+   }
+
+   export function ComponentName({ ...props }: ComponentNameProps) {
+     // component logic
+   }
+   ```
+4. Index file structure:
+   ```typescript
+   // index.ts
+   export { ComponentName } from './ComponentName'
+   ```
+5. Import the component using named imports:
+   ```typescript
+   import { ComponentName } from './components/ComponentName'
+   ```

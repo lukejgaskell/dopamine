@@ -1,0 +1,1 @@
+export { WeightedVoteResults } from './WeightedVoteResults'

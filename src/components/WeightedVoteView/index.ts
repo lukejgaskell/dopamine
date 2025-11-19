@@ -1,0 +1,1 @@
+export { WeightedVoteView } from './WeightedVoteView'

@@ -1,0 +1,1 @@
+export { NewTrendForm } from './NewTrendForm'

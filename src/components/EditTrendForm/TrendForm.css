@@ -1,0 +1,164 @@
+/* Available modules section */
+.modules-available {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.module-add-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-add-button:hover:not(:disabled) {
+  background-color: var(--bg-card);
+  border-color: var(--primary-bg);
+  color: var(--primary-bg);
+}
+
+.module-add-button.dataset-builder {
+  background-color: rgba(139, 92, 246, 0.1);
+  border-color: var(--primary-bg);
+  border-style: solid;
+}
+
+.module-add-button.dataset-builder:hover:not(:disabled) {
+  background-color: rgba(139, 92, 246, 0.2);
+  border-color: var(--primary-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.module-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.module-add-icon {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.module-add-name {
+  flex: 1;
+  text-align: left;
+}
+
+/* Module flow section */
+.modules-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.modules-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.modules-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.module-flow-item {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.module-flow-item.dataset-builder {
+  background-color: rgba(139, 92, 246, 0.05);
+  border-color: var(--primary-bg);
+  border-width: 2px;
+}
+
+.module-flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.module-flow-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.module-flow-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.module-flow-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.module-flow-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.module-flow-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-flow-btn:hover:not(:disabled) {
+  background-color: var(--border-color);
+  border-color: var(--border-color-hover);
+}
+
+.module-flow-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.module-flow-btn.delete {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.module-flow-btn.delete:hover:not(:disabled) {
+  background-color: #dc2626;
+  color: white;
+}

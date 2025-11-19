@@ -1,0 +1,1 @@
+export { EditTrendForm } from './EditTrendForm'

@@ -1,0 +1,1 @@
+export { ModuleConfigEditor } from './ModuleConfigEditor'

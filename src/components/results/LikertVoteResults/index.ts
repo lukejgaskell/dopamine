@@ -1,0 +1,1 @@
+export { LikertVoteResults } from './LikertVoteResults'
