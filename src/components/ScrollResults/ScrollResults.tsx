@@ -16,6 +16,17 @@ export function ScrollResults({ modules, ideas }: ScrollResultsProps) {
   console.log('ScrollResults - modules:', modules)
   console.log('ScrollResults - ideas:', ideas)
 
+  // Get the active dataset_id for a module by looking at the last dataset builder before it
+  const getActiveDatasetId = (moduleIndex: number): string | null => {
+    for (let i = moduleIndex; i >= 0; i--) {
+      const mod = modules[i] as any
+      if (mod.type === 'dataset' || mod.type === 'brainstorm') {
+        return mod.dataset_id || null
+      }
+    }
+    return null
+  }
+
   const getModuleTypeName = (type: string) => {
     const names: Record<string, string> = {
       brainstorm: 'Brainstorm',
@@ -31,6 +42,12 @@ export function ScrollResults({ modules, ideas }: ScrollResultsProps) {
   }
 
   const currentModule = modules[selectedModuleIndex]
+
+  // Filter ideas for the current module based on its active dataset
+  const activeDatasetId = getActiveDatasetId(selectedModuleIndex)
+  const filteredIdeas = currentModule?.type === 'brainstorm' || currentModule?.type === 'dataset'
+    ? ideas.filter(idea => idea.dataset_id === (currentModule as any).dataset_id)
+    : ideas.filter(idea => idea.dataset_id === activeDatasetId)
 
   return (
     <div className="scroll-results">
@@ -50,7 +67,7 @@ export function ScrollResults({ modules, ideas }: ScrollResultsProps) {
       )}
 
       <div className="results-content">
-        {currentModule && <ModuleResultsRenderer module={currentModule} ideas={ideas} />}
+        {currentModule && <ModuleResultsRenderer module={currentModule} ideas={filteredIdeas} />}
       </div>
     </div>
   )

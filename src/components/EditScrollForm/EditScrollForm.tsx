@@ -164,11 +164,20 @@ export function EditScrollForm({ scroll, onClose, onUpdated }: EditScrollFormPro
     }
 
     try {
+      // Add dataset_id to dataset builder modules
+      const modulesWithDatasetId = formData.modules.map(module => {
+        if (module.type === 'dataset' || module.type === 'brainstorm') {
+          return { ...module, dataset_id: crypto.randomUUID() }
+        } else {
+          return module
+        }
+      })
+
       const { error } = await supabase
         .from('scrolls')
         .update({
           name: formData.name,
-          modules: formData.modules,
+          modules: modulesWithDatasetId,
         })
         .eq('id', scroll.id)
 

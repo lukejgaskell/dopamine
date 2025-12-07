@@ -20,22 +20,106 @@ export function WeightedVoteView({
   scrollId,
   totalPoints = 10,
   maxPointsPerItem = 5,
-  moduleIndex,
+  moduleIndex: _moduleIndex,
   modules: _modules,
-  userName,
-  results,
+  userName: _userName,
+  results: _results,
 }: WeightedVoteViewProps) {
   const [allocations, setAllocations] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [totalPointsByIdea, setTotalPointsByIdea] = useState<Record<string, number>>({});
 
-  // Check if user already voted
+  // Listen for auth state changes
   useEffect(() => {
-    if (results?.weightedVotes?.[userName]) {
-      setAllocations(results.weightedVotes[userName]);
-      setSubmitted(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Get current user ID and load their existing votes
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      // Load user's existing votes for these ideas
+      const ideaIds = ideas.map(i => i.id);
+      const { data: userVotes } = await supabase
+        .from('votes')
+        .select('idea_id, value')
+        .eq('created_by', user.id)
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (userVotes && userVotes.length > 0) {
+        const allocationsMap: Record<string, number> = {};
+        userVotes.forEach(vote => {
+          allocationsMap[vote.idea_id] = vote.value;
+        });
+        setAllocations(allocationsMap);
+        setSubmitted(true);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadUserData();
     }
-  }, [results, userName]);
+  }, [ideas, scrollId]);
+
+  // Load total points for all ideas
+  useEffect(() => {
+    const loadTotalPoints = async () => {
+      const ideaIds = ideas.map(i => i.id);
+      const { data: votes } = await supabase
+        .from('votes')
+        .select('idea_id, value')
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (votes) {
+        const totals: Record<string, number> = {};
+        votes.forEach(vote => {
+          totals[vote.idea_id] = (totals[vote.idea_id] || 0) + vote.value;
+        });
+        setTotalPointsByIdea(totals);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadTotalPoints();
+    }
+
+    // Subscribe to vote changes
+    const channel = supabase
+      .channel(`votes:${scrollId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votes',
+          filter: `scroll_id=eq.${scrollId}`,
+        },
+        () => {
+          loadTotalPoints();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [ideas, scrollId]);
 
   const usedPoints = Object.values(allocations).reduce((sum, val) => sum + val, 0);
   const remainingPoints = totalPoints - usedPoints;
@@ -62,35 +146,27 @@ export function WeightedVoteView({
   };
 
   const handleSubmit = async () => {
-    if (submitting || submitted) return;
+    if (submitting || submitted || !currentUserId) return;
     if (Object.keys(allocations).length === 0) return;
 
     setSubmitting(true);
     try {
-      // Fetch fresh scroll data to avoid race conditions
-      const { data: freshScroll } = await supabase
-        .from("scrolls")
-        .select("modules")
-        .eq("id", scrollId)
-        .single();
+      // Convert allocations to vote records
+      const voteRecords = Object.entries(allocations)
+        .filter(([_, value]) => value > 0) // Only include non-zero allocations
+        .map(([ideaId, value]) => ({
+          created_by: currentUserId,
+          scroll_id: scrollId,
+          idea_id: ideaId,
+          value: value,
+        }));
 
-      if (!freshScroll) return;
+      // Insert votes
+      const { error } = await supabase
+        .from('votes')
+        .insert(voteRecords);
 
-      const updatedModules = [...freshScroll.modules];
-      const currentResults = updatedModules[moduleIndex].results || {};
-      const allWeightedVotes = currentResults.weightedVotes || {};
-
-      allWeightedVotes[userName] = allocations;
-
-      updatedModules[moduleIndex] = {
-        ...updatedModules[moduleIndex],
-        results: { ...currentResults, weightedVotes: allWeightedVotes },
-      };
-
-      await supabase
-        .from("scrolls")
-        .update({ modules: updatedModules })
-        .eq("id", scrollId);
+      if (error) throw error;
 
       setSubmitted(true);
     } catch (error: any) {
@@ -102,11 +178,7 @@ export function WeightedVoteView({
 
   // Calculate total points for an idea
   const getTotalPoints = (ideaId: string) => {
-    if (!results?.weightedVotes) return 0;
-    return Object.values(results.weightedVotes).reduce(
-      (sum, userVotes) => sum + (userVotes[ideaId] || 0),
-      0
-    );
+    return totalPointsByIdea[ideaId] || 0;
   };
 
   const sortedIdeas = [...ideas].sort(

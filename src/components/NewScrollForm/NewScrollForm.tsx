@@ -171,12 +171,21 @@ export function NewScrollForm({ onClose, onCreated }: NewScrollFormProps) {
         throw new Error('User not authenticated')
       }
 
+      // Add dataset_id to dataset builder modules
+      const modulesWithDatasetId = formData.modules.map(module => {
+        if (module.type === 'dataset' || module.type === 'brainstorm') {
+          return { ...module, dataset_id: crypto.randomUUID() }
+        } else {
+          return module
+        }
+      })
+
       const { error } = await supabase.from('scrolls').insert([
         {
           name: formData.name,
           status: 'draft',
           user_id: user.id,
-          modules: formData.modules,
+          modules: modulesWithDatasetId,
         },
       ])
 

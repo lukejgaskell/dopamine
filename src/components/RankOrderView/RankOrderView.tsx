@@ -18,10 +18,10 @@ export function RankOrderView({
   ideas,
   scrollId,
   maxItems = 10,
-  moduleIndex,
+  moduleIndex: _moduleIndex,
   modules: _modules,
-  userName,
-  results,
+  userName: _userName,
+  results: _results,
 }: RankOrderViewProps) {
   const [rankedItems, setRankedItems] = useState<Idea[]>([]);
   const [unrankedItems, setUnrankedItems] = useState<Idea[]>(ideas);
@@ -30,20 +30,56 @@ export function RankOrderView({
   const [draggedItem, setDraggedItem] = useState<Idea | null>(null);
   const [dragSource, setDragSource] = useState<"ranked" | "unranked" | null>(null);
   const dragOverItemRef = useRef<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Check if user already ranked
+  // Listen for auth state changes
   useEffect(() => {
-    if (results?.rankings?.[userName]) {
-      const userRanking = results.rankings[userName];
-      const ranked = userRanking
-        .map((ideaId) => ideas.find((i) => i.id === ideaId))
-        .filter(Boolean) as Idea[];
-      const unranked = ideas.filter((i) => !userRanking.includes(i.id));
-      setRankedItems(ranked);
-      setUnrankedItems(unranked);
-      setSubmitted(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Get current user ID and load their existing rankings
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      // Load user's existing votes/rankings for these ideas
+      const ideaIds = ideas.map(i => i.id);
+      const { data: userVotes } = await supabase
+        .from('votes')
+        .select('idea_id, value')
+        .eq('created_by', user.id)
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (userVotes && userVotes.length > 0) {
+        // Sort by rank (value), lower is better (1 = 1st place)
+        const sortedVotes = userVotes.sort((a, b) => a.value - b.value);
+        const ranked = sortedVotes
+          .map(vote => ideas.find(i => i.id === vote.idea_id))
+          .filter(Boolean) as Idea[];
+        const rankedIds = ranked.map(i => i.id);
+        const unranked = ideas.filter((i) => !rankedIds.includes(i.id));
+        setRankedItems(ranked);
+        setUnrankedItems(unranked);
+        setSubmitted(true);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadUserData();
     }
-  }, [results, userName, ideas]);
+  }, [ideas, scrollId]);
 
   const handleDragStart = (
     e: React.DragEvent,
@@ -131,34 +167,24 @@ export function RankOrderView({
   };
 
   const handleSubmit = async () => {
-    if (submitting || submitted || rankedItems.length === 0) return;
+    if (submitting || submitted || rankedItems.length === 0 || !currentUserId) return;
 
     setSubmitting(true);
     try {
-      // Fetch fresh scroll data to avoid race conditions
-      const { data: freshScroll } = await supabase
-        .from("scrolls")
-        .select("modules")
-        .eq("id", scrollId)
-        .single();
+      // Convert rankings to vote records (rank position as value: 1 for 1st, 2 for 2nd, etc.)
+      const voteRecords = rankedItems.map((idea, index) => ({
+        created_by: currentUserId,
+        scroll_id: scrollId,
+        idea_id: idea.id,
+        value: index + 1, // 1-based rank position
+      }));
 
-      if (!freshScroll) return;
+      // Insert votes
+      const { error } = await supabase
+        .from('votes')
+        .insert(voteRecords);
 
-      const updatedModules = [...freshScroll.modules];
-      const currentResults = updatedModules[moduleIndex].results || {};
-      const allRankings = currentResults.rankings || {};
-
-      allRankings[userName] = rankedItems.map((idea) => idea.id);
-
-      updatedModules[moduleIndex] = {
-        ...updatedModules[moduleIndex],
-        results: { ...currentResults, rankings: allRankings },
-      };
-
-      await supabase
-        .from("scrolls")
-        .update({ modules: updatedModules })
-        .eq("id", scrollId);
+      if (error) throw error;
 
       setSubmitted(true);
     } catch (error: any) {

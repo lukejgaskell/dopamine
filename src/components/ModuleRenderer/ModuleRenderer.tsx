@@ -29,33 +29,52 @@ export function ModuleRenderer({
   moduleIndex,
   modules,
 }: ModuleRendererProps) {
+  // Find the active dataset_id by looking at the last dataset builder before this module
+  const getActiveDatasetId = (): string | null => {
+    // Look backwards through modules to find the last dataset builder
+    for (let i = moduleIndex; i >= 0; i--) {
+      const mod = modules[i] as any
+      if (mod.type === 'dataset' || mod.type === 'brainstorm') {
+        return mod.dataset_id || null
+      }
+    }
+    return null
+  }
+
+  const activeDatasetId = getActiveDatasetId()
+
   const renderModuleContent = () => {
     switch (module.type) {
       case 'brainstorm':
+        // Filter ideas for this brainstorm module
+        const brainstormIdeas = ideas.filter(idea =>
+          idea.dataset_id === (module as any).dataset_id
+        )
         return (
           <div className="module-brainstorm">
             <div className="brainstorm-ideas">
-              {ideas.length === 0 ? (
+              {brainstormIdeas.length === 0 ? (
                 <div className="ideas-empty">
                   <p>No ideas yet. Be the first to share one!</p>
                 </div>
               ) : (
-                ideas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
+                brainstormIdeas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
               )}
             </div>
             {userName && (
               <div className="new-idea-fixed">
-                <NewIdeaForm scrollId={scrollId} />
+                <NewIdeaForm scrollId={scrollId} datasetId={(module as any).dataset_id} />
               </div>
             )}
           </div>
         )
 
       case 'vote':
+        const voteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-vote">
             <SimpleVoteView
-              ideas={ideas}
+              ideas={voteIdeas}
               scrollId={scrollId}
               maxVotes={module.maxVotesPerUser || 3}
               moduleIndex={moduleIndex}
@@ -67,10 +86,11 @@ export function ModuleRenderer({
         )
 
       case 'weighted_vote':
+        const weightedVoteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-weighted-vote">
             <WeightedVoteView
-              ideas={ideas}
+              ideas={weightedVoteIdeas}
               scrollId={scrollId}
               totalPoints={module.totalPoints || 10}
               maxPointsPerItem={module.maxPointsPerItem || 5}
@@ -83,10 +103,11 @@ export function ModuleRenderer({
         )
 
       case 'likert_vote':
+        const likertIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-likert-vote">
             <VotingView
-              ideas={ideas}
+              ideas={likertIdeas}
               scrollId={scrollId}
               moduleIndex={moduleIndex}
               modules={modules}
@@ -97,10 +118,11 @@ export function ModuleRenderer({
         )
 
       case 'rank_order':
+        const rankIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-rank-order">
             <RankOrderView
-              ideas={ideas}
+              ideas={rankIdeas}
               scrollId={scrollId}
               maxItems={module.maxItems || 10}
               moduleIndex={moduleIndex}
@@ -112,10 +134,11 @@ export function ModuleRenderer({
         )
 
       case 'work_estimate':
+        const estimateIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-work-estimate">
             <WorkEstimateView
-              ideas={ideas}
+              ideas={estimateIdeas}
               scrollId={scrollId}
               estimateType={module.estimateType || 'hours'}
               moduleIndex={moduleIndex}
@@ -127,10 +150,11 @@ export function ModuleRenderer({
         )
 
       case 'grouping':
+        const groupingIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
         return (
           <div className="module-grouping">
             <GroupingView
-              ideas={ideas}
+              ideas={groupingIdeas}
               scrollId={scrollId}
               maxGroups={module.maxGroups || 5}
               moduleIndex={moduleIndex}
@@ -138,6 +162,25 @@ export function ModuleRenderer({
               userName={userName || 'anonymous'}
               results={module.results}
             />
+          </div>
+        )
+
+      case 'dataset':
+        // Filter ideas for this dataset module
+        const datasetIdeas = ideas.filter(idea =>
+          idea.dataset_id === (module as any).dataset_id
+        )
+        return (
+          <div className="module-dataset">
+            <div className="dataset-ideas">
+              {datasetIdeas.length === 0 ? (
+                <div className="ideas-empty">
+                  <p>No items in this dataset.</p>
+                </div>
+              ) : (
+                datasetIdeas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
+              )}
+            </div>
           </div>
         )
 

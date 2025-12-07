@@ -194,6 +194,8 @@ export function PublicScroll() {
           // Update current module index from step
           if (updatedScroll.step && !isNaN(parseInt(updatedScroll.step))) {
             setCurrentModuleIndex(parseInt(updatedScroll.step));
+            // Hide intro when session starts (step is set)
+            setShowIntro(false);
           }
         }
       )
@@ -243,6 +245,12 @@ export function PublicScroll() {
   }, [id, name, scroll, isOwner]);
 
   const handleNameSubmit = async (submittedName: string) => {
+    // Sign in anonymously if not already authenticated
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      await supabase.auth.signInAnonymously();
+    }
+
     setName(submittedName);
     setShowNamePrompt(false);
 
@@ -255,6 +263,148 @@ export function PublicScroll() {
   // Get the display name for the current user
   const currentUserDisplayName = isOwner ? "host" : name;
 
+  const aggregateModuleResults = async (moduleIndex: number) => {
+    if (!scroll) return;
+
+    const module = scroll.modules[moduleIndex] as any;
+
+    // Get the dataset_id for this module
+    const getActiveDatasetId = (): string | null => {
+      for (let i = moduleIndex; i >= 0; i--) {
+        const mod = scroll.modules[i] as any;
+        if (mod.type === 'dataset' || mod.type === 'brainstorm') {
+          return mod.dataset_id || null;
+        }
+      }
+      return null;
+    };
+
+    const datasetId = module.type === 'brainstorm' || module.type === 'dataset'
+      ? module.dataset_id
+      : getActiveDatasetId();
+
+    if (!datasetId) return;
+
+    // Get all ideas for this dataset
+    const { data: datasetIdeas } = await supabase
+      .from('ideas')
+      .select('id')
+      .eq('scroll_id', scroll.id)
+      .eq('dataset_id', datasetId);
+
+    if (!datasetIdeas || datasetIdeas.length === 0) return;
+
+    const ideaIds = datasetIdeas.map(i => i.id);
+
+    // Get all votes for these ideas
+    const { data: votes } = await supabase
+      .from('votes')
+      .select('created_by, idea_id, value')
+      .eq('scroll_id', scroll.id)
+      .in('idea_id', ideaIds);
+
+    if (!votes) return;
+
+    let results: any = {};
+
+    // Aggregate based on module type
+    switch (module.type) {
+      case 'vote': {
+        // Simple votes: { votes: { [ideaId]: [userId1, userId2, ...] } }
+        const votesByIdea: Record<string, string[]> = {};
+        votes.forEach(vote => {
+          if (!votesByIdea[vote.idea_id]) {
+            votesByIdea[vote.idea_id] = [];
+          }
+          votesByIdea[vote.idea_id].push(vote.created_by);
+        });
+        results = { votes: votesByIdea };
+        break;
+      }
+
+      case 'weighted_vote': {
+        // Weighted votes: { weightedVotes: { [userId]: { [ideaId]: points } } }
+        const weightedVotes: Record<string, Record<string, number>> = {};
+        votes.forEach(vote => {
+          if (!weightedVotes[vote.created_by]) {
+            weightedVotes[vote.created_by] = {};
+          }
+          weightedVotes[vote.created_by][vote.idea_id] = vote.value;
+        });
+        results = { weightedVotes };
+        break;
+      }
+
+      case 'likert_vote': {
+        // Likert ratings: { ratings: { [userId]: { [ideaId]: rating } } }
+        const ratings: Record<string, Record<string, number>> = {};
+        votes.forEach(vote => {
+          if (!ratings[vote.created_by]) {
+            ratings[vote.created_by] = {};
+          }
+          ratings[vote.created_by][vote.idea_id] = vote.value;
+        });
+        results = { ratings };
+        break;
+      }
+
+      case 'work_estimate': {
+        // Work estimates: { estimates: { [userId]: { [ideaId]: estimate } } }
+        const estimates: Record<string, Record<string, number>> = {};
+        votes.forEach(vote => {
+          if (!estimates[vote.created_by]) {
+            estimates[vote.created_by] = {};
+          }
+          estimates[vote.created_by][vote.idea_id] = vote.value;
+        });
+        results = { estimates };
+        break;
+      }
+
+      case 'rank_order': {
+        // Rankings: { rankings: { [userId]: [ideaId1, ideaId2, ...] } }
+        const rankings: Record<string, string[]> = {};
+        votes.forEach(vote => {
+          if (!rankings[vote.created_by]) {
+            rankings[vote.created_by] = [];
+          }
+          // Store as [rank, ideaId] tuple for sorting
+          rankings[vote.created_by].push({ rank: vote.value, ideaId: vote.idea_id } as any);
+        });
+
+        // Sort each user's rankings by rank value and extract ideaIds
+        Object.keys(rankings).forEach(userId => {
+          rankings[userId] = (rankings[userId] as any)
+            .sort((a: any, b: any) => a.rank - b.rank)
+            .map((item: any) => item.ideaId);
+        });
+
+        results = { rankings };
+        break;
+      }
+    }
+
+    // Update scroll with results
+    const { data: freshScroll } = await supabase
+      .from('scrolls')
+      .select('modules')
+      .eq('id', scroll.id)
+      .single();
+
+    if (freshScroll) {
+      const updatedModules = [...freshScroll.modules];
+      updatedModules[moduleIndex] = {
+        ...updatedModules[moduleIndex],
+        results,
+      };
+
+      await supabase
+        .from('scrolls')
+        .update({ modules: updatedModules })
+        .eq('id', scroll.id);
+    }
+  };
+
   const handleNextModule = async () => {
     if (!scroll || !isOwner || !scroll.modules) return;
 
@@ -263,6 +413,9 @@ export function PublicScroll() {
 
     setTransitioning(true);
     try {
+      // Aggregate results for current module before moving to next
+      await aggregateModuleResults(currentModuleIndex);
+
       const { error } = await supabase
         .from("scrolls")
         .update({ step: nextIndex.toString() })
@@ -331,6 +484,9 @@ export function PublicScroll() {
   const hasTimer = currentModule?.type === 'brainstorm' && (currentModule as any).timeLimit;
 
   const handleShowResults = async () => {
+    // Aggregate current module results before showing
+    await aggregateModuleResults(currentModuleIndex);
+
     // Refresh scroll data to get latest results before showing
     console.log('Before refresh - scroll modules:', scroll?.modules);
     await fetchScrollData();
@@ -343,6 +499,9 @@ export function PublicScroll() {
 
     setTransitioning(true);
     try {
+      // Aggregate current module results before completing
+      await aggregateModuleResults(currentModuleIndex);
+
       const { error } = await supabase
         .from("scrolls")
         .update({ status: "completed" })
@@ -439,6 +598,45 @@ export function PublicScroll() {
 
     setTransitioning(true);
     try {
+      // Copy dataset data to ideas table for each dataset module
+      const datasetModules = scroll.modules.filter((m: any) => m.type === 'dataset');
+
+      for (const module of datasetModules) {
+        if (module.datasetId && module.dataset_id) {
+          // Fetch the dataset
+          const { data: dataset, error: fetchError } = await supabase
+            .from('datasets')
+            .select('data')
+            .eq('id', module.datasetId)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching dataset:', fetchError);
+            continue;
+          }
+
+          if (dataset && dataset.data && Array.isArray(dataset.data)) {
+            // Insert each item as an idea
+            const ideas = dataset.data.map((text: string) => ({
+              text,
+              scroll_id: scroll.id,
+              dataset_id: module.dataset_id,
+              votes: 0,
+              unique_user_id: null,
+              created_by: 'Dataset'
+            }));
+
+            const { error: insertError } = await supabase
+              .from('ideas')
+              .insert(ideas);
+
+            if (insertError) {
+              console.error('Error inserting ideas:', insertError);
+            }
+          }
+        }
+      }
+
       // Set scroll status to active
       const { error } = await supabase
         .from("scrolls")
@@ -548,16 +746,18 @@ export function PublicScroll() {
                 </div>
               )}
 
-              <button
-                className="start-session-button"
-                onClick={scroll.status === 'draft' ? handleActivateLinks : handleStartSession}
-                disabled={transitioning}
-              >
-                {transitioning
-                  ? (scroll.status === 'draft' ? 'Activating...' : 'Starting...')
-                  : (scroll.status === 'draft' ? 'Activate Links' : 'Start Session')
-                }
-              </button>
+              {isOwner && (
+                <button
+                  className="start-session-button"
+                  onClick={scroll.status === 'draft' ? handleActivateLinks : handleStartSession}
+                  disabled={transitioning}
+                >
+                  {transitioning
+                    ? (scroll.status === 'draft' ? 'Activating...' : 'Starting...')
+                    : (scroll.status === 'draft' ? 'Activate Links' : 'Start Session')
+                  }
+                </button>
+              )}
             </div>
           </div>
         </main>

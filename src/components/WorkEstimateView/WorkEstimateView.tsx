@@ -28,22 +28,113 @@ export function WorkEstimateView({
   ideas,
   scrollId,
   estimateType = "hours",
-  moduleIndex,
+  moduleIndex: _moduleIndex,
   modules: _modules,
-  userName,
-  results,
+  userName: _userName,
+  results: _results,
 }: WorkEstimateViewProps) {
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [allVotes, setAllVotes] = useState<Record<string, number[]>>({});
 
-  // Check if user already estimated
+  // Listen for auth state changes
   useEffect(() => {
-    if (results?.estimates?.[userName]) {
-      setEstimates(results.estimates[userName]);
-      setSubmitted(true);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Get current user ID and load their existing votes
+  useEffect(() => {
+    const loadUserData = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      // Load user's existing votes for these ideas
+      const ideaIds = ideas.map((i) => i.id);
+      const { data: userVotes } = await supabase
+        .from("votes")
+        .select("idea_id, value")
+        .eq("created_by", user.id)
+        .eq("scroll_id", scrollId)
+        .in("idea_id", ideaIds);
+
+      if (userVotes && userVotes.length > 0) {
+        const votesMap: Record<string, number> = {};
+        userVotes.forEach((vote) => {
+          votesMap[vote.idea_id] = vote.value;
+        });
+        setEstimates(votesMap);
+        setSubmitted(true);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadUserData();
     }
-  }, [results, userName]);
+  }, [ideas, scrollId]);
+
+  // Load all votes for calculating averages
+  useEffect(() => {
+    const loadAllVotes = async () => {
+      const ideaIds = ideas.map((i) => i.id);
+      const { data: votes } = await supabase
+        .from("votes")
+        .select("idea_id, value")
+        .eq("scroll_id", scrollId)
+        .in("idea_id", ideaIds);
+
+      if (votes) {
+        const votesByIdea: Record<string, number[]> = {};
+        votes.forEach((vote) => {
+          if (!votesByIdea[vote.idea_id]) {
+            votesByIdea[vote.idea_id] = [];
+          }
+          votesByIdea[vote.idea_id].push(vote.value);
+        });
+        setAllVotes(votesByIdea);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadAllVotes();
+    }
+
+    // Subscribe to vote changes
+    const channel = supabase
+      .channel(`votes:${scrollId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "votes",
+          filter: `scroll_id=eq.${scrollId}`,
+        },
+        () => {
+          loadAllVotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [ideas, scrollId]);
 
   const handleEstimateChange = (ideaId: string, value: number) => {
     setEstimates((prev) => ({
@@ -53,35 +144,23 @@ export function WorkEstimateView({
   };
 
   const handleSubmit = async () => {
-    if (submitting || submitted) return;
+    if (submitting || submitted || !currentUserId) return;
     if (Object.keys(estimates).length === 0) return;
 
     setSubmitting(true);
     try {
-      // Fetch fresh scroll data to avoid race conditions
-      const { data: freshScroll } = await supabase
-        .from("scrolls")
-        .select("modules")
-        .eq("id", scrollId)
-        .single();
+      // Convert estimates to vote records
+      const voteRecords = Object.entries(estimates).map(([ideaId, value]) => ({
+        created_by: currentUserId,
+        scroll_id: scrollId,
+        idea_id: ideaId,
+        value: value,
+      }));
 
-      if (!freshScroll) return;
+      // Insert votes
+      const { error } = await supabase.from("votes").insert(voteRecords);
 
-      const updatedModules = [...freshScroll.modules];
-      const currentResults = updatedModules[moduleIndex].results || {};
-      const allEstimates = currentResults.estimates || {};
-
-      allEstimates[userName] = estimates;
-
-      updatedModules[moduleIndex] = {
-        ...updatedModules[moduleIndex],
-        results: { ...currentResults, estimates: allEstimates },
-      };
-
-      await supabase
-        .from("scrolls")
-        .update({ modules: updatedModules })
-        .eq("id", scrollId);
+      if (error) throw error;
 
       setSubmitted(true);
     } catch (error: any) {
@@ -93,13 +172,9 @@ export function WorkEstimateView({
 
   // Calculate average estimate for an idea
   const getAverageEstimate = (ideaId: string) => {
-    if (!results?.estimates) return 0;
-    const allEstimates = Object.values(results.estimates);
-    const estimatesForIdea = allEstimates
-      .map((userEstimates) => userEstimates[ideaId])
-      .filter((e) => e !== undefined);
-    if (estimatesForIdea.length === 0) return 0;
-    return estimatesForIdea.reduce((a, b) => a + b, 0) / estimatesForIdea.length;
+    const votes = allVotes[ideaId] || [];
+    if (votes.length === 0) return 0;
+    return votes.reduce((a, b) => a + b, 0) / votes.length;
   };
 
   const getUnitLabel = () => {
@@ -126,7 +201,9 @@ export function WorkEstimateView({
           {TSHIRT_SIZES.map((size) => (
             <button
               key={size.value}
-              className={`tshirt-btn ${currentValue === size.value ? "selected" : ""}`}
+              className={`tshirt-btn ${
+                currentValue === size.value ? "selected" : ""
+              }`}
               onClick={() => handleEstimateChange(ideaId, size.value)}
               title={size.description}
             >
@@ -143,7 +220,9 @@ export function WorkEstimateView({
           {FIBONACCI_POINTS.map((point) => (
             <button
               key={point}
-              className={`point-option ${currentValue === point ? "selected" : ""}`}
+              className={`point-option ${
+                currentValue === point ? "selected" : ""
+              }`}
               onClick={() => handleEstimateChange(ideaId, point)}
             >
               {point}
@@ -162,7 +241,9 @@ export function WorkEstimateView({
           max={estimateType === "hours" ? 1000 : 365}
           step={estimateType === "hours" ? 0.5 : 0.5}
           value={currentValue || ""}
-          onChange={(e) => handleEstimateChange(ideaId, parseFloat(e.target.value) || 0)}
+          onChange={(e) =>
+            handleEstimateChange(ideaId, parseFloat(e.target.value) || 0)
+          }
           placeholder="0"
         />
         <span className="unit-label">{estimateType}</span>
@@ -192,19 +273,28 @@ export function WorkEstimateView({
           {ideas.map((idea) => {
             const userEstimate = estimates[idea.id] || 0;
             return (
-              <div key={idea.id} className={`work-estimate-card ${userEstimate > 0 ? "estimated" : ""}`}>
+              <div
+                key={idea.id}
+                className={`work-estimate-card ${
+                  userEstimate > 0 ? "estimated" : ""
+                }`}
+              >
                 <div className="work-estimate-card-content">
                   <p className="work-estimate-card-text">{idea.text}</p>
                 </div>
                 <div className="estimate-results">
                   <div className="your-estimate">
-                    <span className="estimate-value">{formatEstimate(userEstimate)}</span>
+                    <span className="estimate-value">
+                      {formatEstimate(userEstimate)}
+                    </span>
                     <span className="estimate-label">Yours</span>
                   </div>
                   <div className="avg-estimate">
                     <span className="avg-value">
                       {estimateType === "tshirt"
-                        ? formatEstimate(Math.round(getAverageEstimate(idea.id)))
+                        ? formatEstimate(
+                            Math.round(getAverageEstimate(idea.id))
+                          )
                         : getAverageEstimate(idea.id).toFixed(1)}
                     </span>
                     <span className="avg-label">Avg</span>

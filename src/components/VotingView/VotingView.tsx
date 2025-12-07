@@ -16,21 +16,108 @@ interface VotingViewProps {
 export function VotingView({
   ideas,
   scrollId,
-  moduleIndex,
+  moduleIndex: _moduleIndex,
   modules: _modules,
-  userName,
-  results,
+  userName: _userName,
+  results: _results,
 }: VotingViewProps) {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [allRatings, setAllRatings] = useState<Record<string, number[]>>({});
 
-  // Check if user already rated
+  // Listen for auth state changes
   useEffect(() => {
-    if (results?.ratings?.[userName]) {
-      setRatings(results.ratings[userName]);
-      setSubmitted(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Get current user ID and load their existing ratings
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      // Load user's existing votes for these ideas
+      const ideaIds = ideas.map(i => i.id);
+      const { data: userVotes } = await supabase
+        .from('votes')
+        .select('idea_id, value')
+        .eq('created_by', user.id)
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (userVotes && userVotes.length > 0) {
+        const ratingsMap: Record<string, number> = {};
+        userVotes.forEach(vote => {
+          ratingsMap[vote.idea_id] = vote.value;
+        });
+        setRatings(ratingsMap);
+        setSubmitted(true);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadUserData();
     }
-  }, [results, userName]);
+  }, [ideas, scrollId]);
+
+  // Load all ratings for calculating averages
+  useEffect(() => {
+    const loadAllRatings = async () => {
+      const ideaIds = ideas.map(i => i.id);
+      const { data: votes } = await supabase
+        .from('votes')
+        .select('idea_id, value')
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (votes) {
+        const ratingsByIdea: Record<string, number[]> = {};
+        votes.forEach(vote => {
+          if (!ratingsByIdea[vote.idea_id]) {
+            ratingsByIdea[vote.idea_id] = [];
+          }
+          ratingsByIdea[vote.idea_id].push(vote.value);
+        });
+        setAllRatings(ratingsByIdea);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadAllRatings();
+    }
+
+    // Subscribe to vote changes
+    const channel = supabase
+      .channel(`votes:${scrollId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votes',
+          filter: `scroll_id=eq.${scrollId}`,
+        },
+        () => {
+          loadAllRatings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [ideas, scrollId]);
 
   const handleRating = (ideaId: string, rating: number) => {
     if (submitted) return;
@@ -41,43 +128,27 @@ export function VotingView({
   };
 
   const handleSubmit = async () => {
-    if (Object.keys(ratings).length === 0) return;
+    if (Object.keys(ratings).length === 0 || !currentUserId) return;
 
-    // Fetch fresh scroll data to avoid race conditions
-    const { data: freshScroll } = await supabase
-      .from("scrolls")
-      .select("modules")
-      .eq("id", scrollId)
-      .single();
+    // Convert ratings to vote records
+    const voteRecords = Object.entries(ratings).map(([ideaId, value]) => ({
+      created_by: currentUserId,
+      scroll_id: scrollId,
+      idea_id: ideaId,
+      value: value,
+    }));
 
-    if (!freshScroll) return;
-
-    const updatedModules = [...freshScroll.modules];
-    const currentResults = updatedModules[moduleIndex].results || {};
-    const allRatings = currentResults.ratings || {};
-
-    allRatings[userName] = ratings;
-
-    updatedModules[moduleIndex] = {
-      ...updatedModules[moduleIndex],
-      results: { ...currentResults, ratings: allRatings },
-    };
-
+    // Insert votes
     await supabase
-      .from("scrolls")
-      .update({ modules: updatedModules })
-      .eq("id", scrollId);
+      .from('votes')
+      .insert(voteRecords);
 
     setSubmitted(true);
   };
 
   // Calculate average rating for an idea
   const getAverageRating = (ideaId: string) => {
-    if (!results?.ratings) return 0;
-    const allRatings = Object.values(results.ratings);
-    const ratingsForIdea = allRatings
-      .map((userRatings) => userRatings[ideaId])
-      .filter((r) => r !== undefined);
+    const ratingsForIdea = allRatings[ideaId] || [];
     if (ratingsForIdea.length === 0) return 0;
     return ratingsForIdea.reduce((a, b) => a + b, 0) / ratingsForIdea.length;
   };

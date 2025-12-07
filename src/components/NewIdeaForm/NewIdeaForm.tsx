@@ -1,17 +1,20 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useUserStore } from '../../store/userStore'
 import './NewIdeaForm.css'
 
 interface NewIdeaFormProps {
   scrollId: string
+  datasetId?: string | null
   onIdeaCreated?: () => void
 }
 
-export function NewIdeaForm({ scrollId, onIdeaCreated }: NewIdeaFormProps) {
+export function NewIdeaForm({ scrollId, datasetId, onIdeaCreated }: NewIdeaFormProps) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { name } = useUserStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,11 +24,17 @@ export function NewIdeaForm({ scrollId, onIdeaCreated }: NewIdeaFormProps) {
     setError(null)
 
     try {
+      // Get current user session for unique_user_id
+      const { data: { user } } = await supabase.auth.getUser()
+
       const { error } = await supabase.from('ideas').insert([
         {
           text: text.trim(),
           scroll_id: scrollId,
+          dataset_id: datasetId,
           votes: 0,
+          unique_user_id: user?.id || null,
+          created_by: name || 'Anonymous',
         },
       ])
 

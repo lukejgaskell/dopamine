@@ -18,63 +18,118 @@ export function SimpleVoteView({
   ideas,
   scrollId,
   maxVotes = 3,
-  moduleIndex,
+  moduleIndex: _moduleIndex,
   modules: _modules,
-  userName,
-  results,
+  userName: _userName,
+  results: _results,
 }: SimpleVoteViewProps) {
   const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
 
-  // Check if user already voted
+  // Listen for auth state changes
   useEffect(() => {
-    if (results?.votes) {
-      const userVotes = new Set<string>();
-      Object.entries(results.votes).forEach(([ideaId, voters]) => {
-        if (voters.includes(userName)) {
-          userVotes.add(ideaId);
-        }
-      });
-      if (userVotes.size > 0) {
-        setVotedIdeas(userVotes);
-        setSubmitted(true);
-      }
-    }
-  }, [results, userName]);
-
-  const saveResults = async (newVotedIdeas: Set<string>) => {
-    // Fetch fresh scroll data to avoid race conditions
-    const { data: freshScroll } = await supabase
-      .from("scrolls")
-      .select("modules")
-      .eq("id", scrollId)
-      .single();
-
-    if (!freshScroll) return;
-
-    const updatedModules = [...freshScroll.modules];
-    const currentResults = updatedModules[moduleIndex].results || {};
-    const votes = currentResults.votes || {};
-
-    // Add user to each voted idea
-    newVotedIdeas.forEach((ideaId) => {
-      if (!votes[ideaId]) {
-        votes[ideaId] = [];
-      }
-      if (!votes[ideaId].includes(userName)) {
-        votes[ideaId].push(userName);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
       }
     });
 
-    updatedModules[moduleIndex] = {
-      ...updatedModules[moduleIndex],
-      results: { ...currentResults, votes },
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Get current user ID and load their existing votes
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      // Load user's existing votes for these ideas
+      const ideaIds = ideas.map(i => i.id);
+      const { data: userVotes } = await supabase
+        .from('votes')
+        .select('idea_id')
+        .eq('created_by', user.id)
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (userVotes && userVotes.length > 0) {
+        const votedSet = new Set(userVotes.map(v => v.idea_id));
+        setVotedIdeas(votedSet);
+        setSubmitted(true);
+      }
     };
 
+    if (ideas.length > 0) {
+      loadUserData();
+    }
+  }, [ideas, scrollId]);
+
+  // Load vote counts for all ideas
+  useEffect(() => {
+    const loadVoteCounts = async () => {
+      const ideaIds = ideas.map(i => i.id);
+      const { data: votes } = await supabase
+        .from('votes')
+        .select('idea_id')
+        .eq('scroll_id', scrollId)
+        .in('idea_id', ideaIds);
+
+      if (votes) {
+        const counts: Record<string, number> = {};
+        votes.forEach(vote => {
+          counts[vote.idea_id] = (counts[vote.idea_id] || 0) + 1;
+        });
+        setVoteCounts(counts);
+      }
+    };
+
+    if (ideas.length > 0) {
+      loadVoteCounts();
+    }
+
+    // Subscribe to vote changes
+    const channel = supabase
+      .channel(`votes:${scrollId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votes',
+          filter: `scroll_id=eq.${scrollId}`,
+        },
+        () => {
+          loadVoteCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [ideas, scrollId]);
+
+  const saveResults = async (newVotedIdeas: Set<string>) => {
+    if (!currentUserId) return;
+
+    // Convert votes to vote records (value = 1 for simple votes)
+    const voteRecords = Array.from(newVotedIdeas).map(ideaId => ({
+      created_by: currentUserId,
+      scroll_id: scrollId,
+      idea_id: ideaId,
+      value: 1,
+    }));
+
+    // Insert votes
     await supabase
-      .from("scrolls")
-      .update({ modules: updatedModules })
-      .eq("id", scrollId);
+      .from('votes')
+      .insert(voteRecords);
   };
 
   const handleVote = async (ideaId: string) => {
@@ -98,9 +153,9 @@ export function SimpleVoteView({
     setSubmitted(true);
   };
 
-  // Calculate vote counts from results
+  // Calculate vote counts from voteCounts state
   const getVoteCount = (ideaId: string) => {
-    return results?.votes?.[ideaId]?.length || 0;
+    return voteCounts[ideaId] || 0;
   };
 
   const sortedIdeas = [...ideas].sort(
