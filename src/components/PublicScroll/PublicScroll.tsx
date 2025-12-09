@@ -9,7 +9,6 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { NamePrompt } from "../NamePrompt";
 import { ActiveUsers } from "../ActiveUsers";
 import { ModuleRenderer } from "../ModuleRenderer";
-import { ModuleTimer } from "../ModuleTimer";
 import { Logo } from "../Logo";
 import { ScrollResults } from "../ScrollResults";
 import "./PublicScroll.css";
@@ -481,7 +480,6 @@ export function PublicScroll() {
   const currentModule = scroll.modules?.[currentModuleIndex];
   const hasNextModule = scroll.modules && currentModuleIndex < scroll.modules.length - 1;
   const hasPrevModule = currentModuleIndex > 0;
-  const hasTimer = currentModule?.type === 'brainstorm' && (currentModule as any).timeLimit;
 
   const handleShowResults = async () => {
     // Aggregate current module results before showing
@@ -817,18 +815,6 @@ export function PublicScroll() {
 
       {currentUserDisplayName && activeUsers.length > 0 && (
         <ActiveUsers users={activeUsers} currentUserName={currentUserDisplayName} />
-      )}
-
-      {hasTimer && (
-        <div className="sidebar-timer">
-          <ModuleTimer
-            timeLimit={(currentModule as any).timeLimit}
-            scrollId={scroll.id}
-            moduleIndex={currentModuleIndex}
-            modules={scroll.modules}
-            timerState={(currentModule as any).timerState}
-          />
-        </div>
       )}
 
       <header className="public-scroll-header">
