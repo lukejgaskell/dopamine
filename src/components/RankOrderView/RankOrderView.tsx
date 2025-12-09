@@ -34,7 +34,7 @@ export function RankOrderView({
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setCurrentUserId(session.user.id);
       }
@@ -196,8 +196,8 @@ export function RankOrderView({
 
   // Calculate average rank position for an idea
   const getAverageRank = (ideaId: string) => {
-    if (!results?.rankings) return 0;
-    const rankings = Object.values(results.rankings);
+    if (!_results?.rankings) return 0;
+    const rankings = Object.values(_results.rankings);
     const positions = rankings
       .map((ranking) => ranking.indexOf(ideaId))
       .filter((pos) => pos !== -1);

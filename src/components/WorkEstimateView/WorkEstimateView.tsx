@@ -43,7 +43,7 @@ export function WorkEstimateView({
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setCurrentUserId(session.user.id);
       }

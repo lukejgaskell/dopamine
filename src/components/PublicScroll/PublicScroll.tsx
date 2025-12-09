@@ -602,12 +602,13 @@ export function PublicScroll() {
       const datasetModules = scroll.modules.filter((m: any) => m.type === 'dataset');
 
       for (const module of datasetModules) {
-        if (module.datasetId && module.dataset_id) {
+        const m = module as any;
+        if (m.datasetId && m.dataset_id) {
           // Fetch the dataset
           const { data: dataset, error: fetchError } = await supabase
             .from('datasets')
             .select('data')
-            .eq('id', module.datasetId)
+            .eq('id', m.datasetId)
             .single();
 
           if (fetchError) {
@@ -620,7 +621,7 @@ export function PublicScroll() {
             const ideas = dataset.data.map((text: string) => ({
               text,
               scroll_id: scroll.id,
-              dataset_id: module.dataset_id,
+              dataset_id: m.dataset_id,
               votes: 0,
               unique_user_id: null,
               created_by: 'Dataset'
