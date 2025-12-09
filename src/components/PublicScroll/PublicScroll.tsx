@@ -120,7 +120,7 @@ export function PublicScroll() {
 
   // Set up real-time subscription for ideas
   useEffect(() => {
-    if (!id || !scroll) return;
+    if (!id) return;
 
     const ideasChannel = supabase
       .channel(`ideas:${id}`)
@@ -171,11 +171,11 @@ export function PublicScroll() {
     return () => {
       ideasChannel.unsubscribe();
     };
-  }, [id, scroll]);
+  }, [id]);
 
   // Set up real-time subscription for scroll step changes
   useEffect(() => {
-    if (!id || !scroll) return;
+    if (!id) return;
 
     const scrollChannel = supabase
       .channel(`scroll-updates:${id}`)
@@ -203,11 +203,11 @@ export function PublicScroll() {
     return () => {
       scrollChannel.unsubscribe();
     };
-  }, [id, scroll]);
+  }, [id]);
 
   // Set up real-time presence
   useEffect(() => {
-    if (!id || !scroll) return;
+    if (!id) return;
 
     // Determine the display name for presence
     const displayName = isOwner ? "host" : name;
@@ -241,7 +241,7 @@ export function PublicScroll() {
     return () => {
       scrollChannel.unsubscribe();
     };
-  }, [id, name, scroll, isOwner]);
+  }, [id, name, isOwner]);
 
   const handleNameSubmit = async (submittedName: string) => {
     // Sign in anonymously if not already authenticated
