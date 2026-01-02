@@ -1,0 +1,21 @@
+.edit-trend-container {
+  min-height: 100%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(6, 182, 212, 0.05) 100%);
+}
+
+.edit-trend-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.edit-trend-loading,
+.edit-trend-error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.25rem;
+}
+
+.edit-trend-error {
+  color: var(--error-bg);
+}

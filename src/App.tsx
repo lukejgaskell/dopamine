@@ -2,57 +2,20 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
-import { Auth } from './components/Auth'
-import { Scrolls } from './components/Scrolls'
-import { Trends } from './components/Trends'
-import { Datasets } from './components/Datasets'
-import { PublicScroll } from './components/PublicScroll'
-import { ScrollResultsPage } from './components/ScrollResultsPage'
+import { Auth } from './pages/Auth'
+import { DashboardLayout } from './pages/(dashboard)/Layout'
+import { ScrollsPage } from './pages/(dashboard)/scrolls/page'
+import { EditScrollPage } from './pages/(dashboard)/scrolls/[id]/page'
+import { TrendsPage } from './pages/(dashboard)/trends/page'
+import { EditTrendPage } from './pages/(dashboard)/trends/[id]/page'
+import { DatasetsPage } from './pages/(dashboard)/datasets/page'
+import { EditDatasetPage } from './pages/(dashboard)/datasets/[id]/page'
+import { PublicScroll } from './pages/PublicScroll'
+import { ScrollResultsPage } from './pages/Dashboard/components/ScrollResultsPage'
 import './App.css'
 
-type DashboardView = 'scrolls' | 'trends' | 'datasets'
-
-function Dashboard({ session }: { session: Session }) {
-  const [activeView, setActiveView] = useState<DashboardView>('scrolls')
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
-
-  return (
-    <>
-      <div className="user-info">
-        <span>Logged in as: {session.user.email}</span>
-        <button onClick={handleSignOut} className="sign-out-button">
-          Sign Out
-        </button>
-      </div>
-      <div className="dashboard-navigation">
-        <button
-          className={`nav-tab ${activeView === 'scrolls' ? 'active' : ''}`}
-          onClick={() => setActiveView('scrolls')}
-        >
-          Scrolls
-        </button>
-        <button
-          className={`nav-tab ${activeView === 'trends' ? 'active' : ''}`}
-          onClick={() => setActiveView('trends')}
-        >
-          Trends
-        </button>
-        <button
-          className={`nav-tab ${activeView === 'datasets' ? 'active' : ''}`}
-          onClick={() => setActiveView('datasets')}
-        >
-          Datasets
-        </button>
-      </div>
-      {activeView === 'scrolls' && <Scrolls />}
-      {activeView === 'trends' && <Trends />}
-      {activeView === 'datasets' && <Datasets />}
-    </>
-  )
-}
+// Re-export SidebarAction for backward compatibility
+export type { SidebarAction } from './pages/(dashboard)/Layout'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -85,24 +48,27 @@ function App() {
         {/* Public route for viewing active scrolls */}
         <Route path="/scroll/:id" element={<PublicScroll />} />
 
-        {/* Results page (requires auth) */}
-        <Route
-          path="/results/:id"
-          element={
-            session ? <ScrollResultsPage /> : <Navigate to="/" replace />
-          }
-        />
+        {/* Auth route */}
+        <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/scrolls" replace />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/"
-          element={
-            session ? <Dashboard session={session} /> : <Auth />
-          }
-        />
+        {/* Dashboard routes (requires auth) */}
+        {session ? (
+          <Route element={<DashboardLayout session={session} />}>
+            <Route path="/scrolls" element={<ScrollsPage />} />
+            <Route path="/scrolls/:id" element={<EditScrollPage />} />
+            <Route path="/trends" element={<TrendsPage />} />
+            <Route path="/trends/:id" element={<EditTrendPage />} />
+            <Route path="/datasets" element={<DatasetsPage />} />
+            <Route path="/datasets/:id" element={<EditDatasetPage />} />
+            <Route path="/results/:id" element={<ScrollResultsPage />} />
+            <Route path="/" element={<Navigate to="/scrolls" replace />} />
+          </Route>
+        ) : (
+          <Route path="/" element={<Navigate to="/auth" replace />} />
+        )}
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all - redirect based on auth state */}
+        <Route path="*" element={<Navigate to={session ? "/scrolls" : "/auth"} replace />} />
       </Routes>
     </BrowserRouter>
   )

@@ -8,50 +8,50 @@ export type ModuleType =
   | 'work_estimate'
   | 'grouping'
 
-export interface TimerState {
+export type TimerState = {
   isRunning: boolean
   startedAt: string | null // ISO timestamp when timer was started
   pausedAt: number | null // seconds remaining when paused
 }
 
 // Result types for each module
-export interface VoteResult {
+export type VoteResult = {
   oddeaId: string
   count: number
 }
 
-export interface UserVoteResult {
+export type UserVoteResult = {
   oddeaId: string
   oddeaIds: string[]
 }
 
-export interface UserRatingResult {
+export type UserRatingResult = {
   oddeaId: string
   rating: number
 }
 
-export interface UserWeightedVoteResult {
+export type UserWeightedVoteResult = {
   oddeaId: string
   points: number
 }
 
-export interface UserRankingResult {
+export type UserRankingResult = {
   oddeaId: string
   rank: number
 }
 
-export interface UserEstimateResult {
+export type UserEstimateResult = {
   oddeaId: string
   estimate: number
 }
 
-export interface GroupResult {
+export type GroupResult = {
   id: string
   name: string
   itemIds: string[]
 }
 
-export interface ModuleResults {
+export type ModuleResults = {
   // Map of oddeaId to userId to their response
   votes?: Record<string, string[]> // oddeaId -> userId[]
   ratings?: Record<string, Record<string, number>> // userId -> { oddeaId -> rating }
@@ -61,54 +61,55 @@ export interface ModuleResults {
   groups?: Record<string, GroupResult[]> // userId -> groups
 }
 
-export interface BaseModuleConfig {
+export type BaseModuleConfig = {
+  id: string
   type: ModuleType
   prompt?: string
   timerState?: TimerState
   results?: ModuleResults
 }
 
-export interface BrainstormModuleConfig extends BaseModuleConfig {
+export type BrainstormModuleConfig = BaseModuleConfig & {
   type: 'brainstorm'
   timeLimit?: number // in minutes
   allowAnonymous?: boolean
 }
 
-export interface DatasetModuleConfig extends BaseModuleConfig {
+export type DatasetModuleConfig = BaseModuleConfig & {
   type: 'dataset'
   datasetId: string
   datasetName: string
 }
 
-export interface VoteModuleConfig extends BaseModuleConfig {
+export type VoteModuleConfig = BaseModuleConfig & {
   type: 'vote'
   maxVotesPerUser?: number
 }
 
-export interface WeightedVoteModuleConfig extends BaseModuleConfig {
+export type WeightedVoteModuleConfig = BaseModuleConfig & {
   type: 'weighted_vote'
   totalPoints?: number
   maxPointsPerItem?: number
 }
 
-export interface LikertVoteModuleConfig extends BaseModuleConfig {
+export type LikertVoteModuleConfig = BaseModuleConfig & {
   type: 'likert_vote'
   scale?: number // default 5
   lowLabel?: string
   highLabel?: string
 }
 
-export interface RankOrderModuleConfig extends BaseModuleConfig {
+export type RankOrderModuleConfig = BaseModuleConfig & {
   type: 'rank_order'
   maxItems?: number
 }
 
-export interface WorkEstimateModuleConfig extends BaseModuleConfig {
+export type WorkEstimateModuleConfig = BaseModuleConfig & {
   type: 'work_estimate'
   estimateType?: 'hours' | 'days' | 'points' | 'tshirt'
 }
 
-export interface GroupingModuleConfig extends BaseModuleConfig {
+export type GroupingModuleConfig = BaseModuleConfig & {
   type: 'grouping'
   maxGroups?: number
 }

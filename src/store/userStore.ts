@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface UserState {
+type UserState = {
   name: string | null
   setName: (name: string) => void
   clearName: () => void

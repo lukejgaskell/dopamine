@@ -54,14 +54,22 @@ All colors are defined in `src/theme.css` using CSS variables:
 4. Can create ideas (fixed floating form at bottom)
 5. Views randomly positioned idea cards in canvas
 
-### Component Organization
-- `/components` - All React components (folder-based structure)
-  - Each component has its own folder: `ComponentName/`
-  - Contains: `ComponentName.tsx`, `ComponentName.css`, `index.ts`
+### Project Organization
+- `/pages` - Page-level components (one per route)
+  - Each page has its own folder: `PageName/`
+  - Contains: `PageName.tsx`, `PageName.css`, `index.ts`
   - **Always use named exports**, not default exports
-  - Index file pattern: `export { ComponentName } from './ComponentName'`
-  - Subfolder for specialized components: `/results` for result rendering components
-- `/types` - TypeScript interfaces (Scroll, Idea, Module)
+  - Page-specific components go in nested `components/` folder
+    - Example: `Dashboard/components/ScrollCard/`, `PublicScroll/components/ModuleRenderer/`
+    - Each component follows the same folder structure
+    - Components used by only one page should be co-located with that page
+- `/components` - Truly shared components (used across multiple pages)
+  - Currently only contains `Logo` (used in Auth, Dashboard, PublicScroll)
+  - Follow same folder structure as page components
+  - Only add components here if they're used by 2+ pages
+- `/types` - TypeScript type definitions (Scroll, Idea, Module)
+  - **Always use `type` declarations**, never `interface`
+  - For type composition, use intersection types (`&`) instead of `extends`
 - `/store` - Zustand stores
 - `/lib` - Supabase client setup
 
@@ -84,47 +92,72 @@ All colors are defined in `src/theme.css` using CSS variables:
 ## File Structure
 ```
 src/
-├── components/
+├── pages/
 │   ├── Auth/
-│   │   ├── Auth.tsx - Login/signup
+│   │   ├── Auth.tsx - Login/signup page
 │   │   ├── Auth.css
 │   │   └── index.ts
-│   ├── Scrolls/
-│   │   ├── Scrolls.tsx - Scroll list (authenticated)
-│   │   ├── Scrolls.css
-│   │   └── index.ts
-│   ├── ScrollCard/
-│   │   ├── ScrollCard.tsx - Individual scroll card
-│   │   ├── ScrollCard.css
-│   │   └── index.ts
-│   ├── PublicScroll/
-│   │   ├── PublicScroll.tsx - Public scroll view
-│   │   ├── PublicScroll.css
-│   │   └── index.ts
-│   ├── ActiveUsers/
-│   │   ├── ActiveUsers.tsx - Realtime presence display
-│   │   ├── ActiveUsers.css
-│   │   └── index.ts
-│   ├── ModuleRenderer/
-│   │   ├── ModuleRenderer.tsx - Module display logic
-│   │   ├── ModuleRenderer.css
-│   │   └── index.ts
-│   ├── results/
-│   │   ├── ModuleResultsRenderer/
-│   │   │   ├── ModuleResultsRenderer.tsx
-│   │   │   └── index.ts
-│   │   ├── SimpleVoteResults/
-│   │   │   ├── SimpleVoteResults.tsx
-│   │   │   └── index.ts
-│   │   └── ResultsCommon.css - Shared results styling
-│   └── ... (other components follow same pattern)
+│   ├── Dashboard/
+│   │   ├── Dashboard.tsx - Main dashboard view
+│   │   ├── Dashboard.css
+│   │   ├── index.ts
+│   │   └── components/ - Dashboard-specific components
+│   │       ├── ScrollCard/
+│   │       ├── DatasetCard/
+│   │       ├── TrendCard/
+│   │       ├── Datasets/
+│   │       ├── Trends/
+│   │       ├── NewScrollForm/
+│   │       ├── EditScrollForm/
+│   │       ├── NewDatasetForm/
+│   │       ├── EditDatasetForm/
+│   │       ├── NewTrendForm/
+│   │       ├── EditTrendForm/
+│   │       ├── ModuleConfigEditor/
+│   │       └── ScrollResultsPage/
+│   └── PublicScroll/
+│       ├── PublicScroll.tsx - Public scroll page
+│       ├── PublicScroll.css
+│       ├── index.ts
+│       └── components/ - PublicScroll-specific components
+│           ├── IntroView/
+│           ├── MobileMenu/
+│           ├── ScrollHeader/
+│           ├── ModuleResultsView/
+│           ├── ActiveUsers/
+│           ├── NamePrompt/
+│           ├── ModuleRenderer/
+│           ├── ModuleTimer/
+│           ├── IdeaCard/
+│           ├── NewIdeaForm/
+│           ├── ScrollResults/
+│           ├── ResultsView/
+│           ├── SimpleVoteView/
+│           ├── WeightedVoteView/
+│           ├── VotingView/
+│           ├── RankOrderView/
+│           ├── WorkEstimateView/
+│           ├── GroupingView/
+│           └── results/ - Result rendering components
+│               ├── ModuleResultsRenderer/
+│               ├── SimpleVoteResults/
+│               ├── WeightedVoteResults/
+│               ├── RankOrderResults/
+│               ├── LikertVoteResults/
+│               ├── WorkEstimateResults/
+│               ├── GroupingResults/
+│               └── ResultsCommon.css
+├── components/
+│   └── Logo/ - Truly shared component (used across pages)
 ├── lib/
 │   └── supabase.ts - Supabase client
 ├── store/
 │   └── userStore.ts - Zustand user state
 ├── types/
-│   ├── scroll.ts - Scroll interface
-│   ├── idea.ts - Idea interface
+│   ├── scroll.ts - Scroll type
+│   ├── idea.ts - Idea type
+│   ├── dataset.ts - Dataset type
+│   ├── trend.ts - Trend type
 │   └── module.ts - Module types
 ├── theme.css - Global theme variables
 ├── index.css - Global base styles
@@ -144,7 +177,12 @@ src/
 3. Clean up in return function
 
 ### Creating new component
-1. Create a new folder in `components/`: `ComponentName/`
+**Decide where it belongs:**
+- If used by only one page → `pages/PageName/components/ComponentName/`
+- If used by 2+ pages → `components/ComponentName/`
+
+**Then follow this structure:**
+1. Create a new folder: `ComponentName/`
 2. Create three files in the folder:
    - `ComponentName.tsx` - Component logic with **named export**
    - `ComponentName.css` - Component styles (use theme variables for all colors)
@@ -154,7 +192,7 @@ src/
    // ComponentName.tsx
    import './ComponentName.css'
 
-   interface ComponentNameProps {
+   type ComponentNameProps = {
      // props here
    }
 
@@ -167,7 +205,68 @@ src/
    // index.ts
    export { ComponentName } from './ComponentName'
    ```
-5. Import the component using named imports:
+5. Import examples:
    ```typescript
+   // From within same page
    import { ComponentName } from './components/ComponentName'
+
+   // From shared components
+   import { Logo } from '../../components/Logo'
+   ```
+
+### Breaking down complex pages
+When a page component becomes too large (>500 lines) or has multiple distinct UI sections:
+1. Create a `components/` folder inside the page folder (if it doesn't exist)
+2. Extract logical sections into separate components (e.g., `IntroView`, `MobileMenu`, `ScrollHeader`)
+3. Each component follows the same structure as other components
+4. Move component-specific CSS to component files
+5. Keep shared styles in the page's CSS file
+6. Example structure:
+   ```
+   pages/PublicScroll/
+   ├── PublicScroll.tsx       # Main page orchestration logic
+   ├── PublicScroll.css       # Shared/base styles
+   ├── index.ts
+   └── components/            # Page-specific components
+       ├── IntroView/
+       │   ├── IntroView.tsx
+       │   ├── IntroView.css
+       │   └── index.ts
+       ├── MobileMenu/
+       │   ├── MobileMenu.tsx
+       │   ├── MobileMenu.css
+       │   └── index.ts
+       └── ModuleRenderer/
+           ├── ModuleRenderer.tsx
+           ├── ModuleRenderer.css
+           └── index.ts
+   ```
+
+### Creating new types
+1. Add types to appropriate file in `types/` folder
+2. **Always use `type` declarations**, never `interface`:
+   ```typescript
+   // ✅ Correct
+   export type MyType = {
+     id: string
+     name: string
+   }
+
+   // ❌ Incorrect
+   export interface MyType {
+     id: string
+     name: string
+   }
+   ```
+3. For type composition, use intersection types (`&`):
+   ```typescript
+   // ✅ Correct
+   export type ExtendedType = BaseType & {
+     additionalField: string
+   }
+
+   // ❌ Incorrect - don't use extends with types
+   export type ExtendedType extends BaseType = {
+     additionalField: string
+   }
    ```

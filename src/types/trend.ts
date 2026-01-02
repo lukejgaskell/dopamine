@@ -1,6 +1,6 @@
 import type { ModuleConfig } from './module'
 
-export interface Trend {
+export type Trend = {
   id: string
   created_at: string
   user_id: string

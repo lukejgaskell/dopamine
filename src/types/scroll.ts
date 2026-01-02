@@ -1,6 +1,6 @@
 import type { ModuleConfig } from './module'
 
-export interface Scroll {
+export type Scroll = {
   id: string
   created_at: string
   user_id: string
@@ -9,4 +9,5 @@ export interface Scroll {
   status: string
   step: string
   modules: ModuleConfig[]
+  selected_ideas?: string[]
 }

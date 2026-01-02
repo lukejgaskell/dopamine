@@ -1,4 +1,4 @@
-export interface Dataset {
+export type Dataset = {
   id: string
   created_at: string
   user_id: string

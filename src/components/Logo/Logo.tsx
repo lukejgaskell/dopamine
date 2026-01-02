@@ -1,6 +1,6 @@
 import './Logo.css'
 
-interface LogoProps {
+type LogoProps = {
   size?: 'small' | 'medium' | 'large'
   showText?: boolean
 }
