@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
-import { useUserStore } from '../../store/userStore'
+import { supabase } from '@/lib/supabase'
+import { useUserStore } from '@/store/userStore'
+import { useDialog } from '@/components/Dialog'
 import { NamePrompt } from './components/NamePrompt'
 import { ActiveUsers } from './components/ActiveUsers'
 import { ModuleRenderer } from './components/ModuleRenderer'
@@ -9,10 +10,10 @@ import { IntroView } from './components/IntroView'
 import { ModuleResultsView } from './components/ModuleResultsView'
 import { MobileMenu } from './components/MobileMenu'
 import { ScrollHeader } from './components/ScrollHeader'
-import { FinalResultsView } from './components/FinalResultsView'
 import { useScrollData } from './hooks/useScrollData'
 import { useScrollNavigation } from './hooks/useScrollNavigation'
 import { getActiveDatasetId } from './utils'
+import { ScrollProvider } from './context'
 import './PublicScroll.css'
 
 export function PublicScroll() {
@@ -20,12 +21,17 @@ export function PublicScroll() {
   const [searchParams] = useSearchParams()
   const key = searchParams.get('key')
   const navigate = useNavigate()
+  const { error: showError } = useDialog()
 
   const { name, setName } = useUserStore()
   const [showNamePrompt, setShowNamePrompt] = useState(false)
   const [showIntro, setShowIntro] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasInitializedSelection = useRef(false)
+
+  const handleError = useCallback((message: string) => {
+    showError({ title: 'Error', message })
+  }, [showError])
 
   // Use custom hooks for data and navigation
   const {
@@ -54,8 +60,6 @@ export function PublicScroll() {
     handleStartSession,
     toggleIdeaSelection,
     toggleSelectAll,
-    showResults,
-    setShowResults,
   } = useScrollNavigation({
     scroll,
     isOwner,
@@ -64,6 +68,8 @@ export function PublicScroll() {
     setShowingModuleResults,
     fetchScrollData,
     ideas,
+    onError: handleError,
+    onNavigateToResults: (scrollId) => navigate(`/results/${scrollId}`),
   })
 
   // Hide intro if step is set (session has started)
@@ -91,7 +97,7 @@ export function PublicScroll() {
             ? currentModule.dataset_id
             : getActiveDatasetId(scroll.modules, currentModuleIndex)
 
-        const datasetIdeas = ideas.filter((idea) => idea.dataset_id === datasetId)
+        const datasetIdeas = ideas.filter((idea) => idea.dataset_id === datasetId && !idea.deleted)
 
         if (datasetIdeas.length > 0) {
           toggleSelectAll(datasetIdeas)
@@ -147,8 +153,8 @@ export function PublicScroll() {
     )
   }
 
-  // Show "session has ended" for anonymous users when scroll is completed
-  if (scroll.status === 'completed' && !isAuthenticated) {
+  // Show "session has ended" for non-host users when scroll is completed
+  if (scroll.status === 'completed' && !isOwner) {
     return (
       <div className="public-scroll-container">
         <div className="session-ended">
@@ -179,19 +185,6 @@ export function PublicScroll() {
     )
   }
 
-  // Show results view
-  if (showResults && scroll.modules) {
-    return (
-      <FinalResultsView
-        scroll={scroll}
-        ideas={ideas}
-        isAuthenticated={isAuthenticated}
-        onNavigateToDashboard={() => navigate('/')}
-        onBackToSession={() => setShowResults(false)}
-      />
-    )
-  }
-
   // Show module results between modules (for all users)
   if (showingModuleResults && scroll.modules) {
     // Get dataset ideas for this module
@@ -201,7 +194,7 @@ export function PublicScroll() {
         ? currentModule.dataset_id
         : getActiveDatasetId(scroll.modules, currentModuleIndex)
 
-    const datasetIdeas = ideas.filter((idea) => idea.dataset_id === datasetId)
+    const datasetIdeas = ideas.filter((idea) => idea.dataset_id === datasetId && !idea.deleted)
 
     return (
       <ModuleResultsView
@@ -221,66 +214,68 @@ export function PublicScroll() {
   }
 
   return (
-    <div className="public-scroll-container">
-      {showNamePrompt && (
-        <NamePrompt
-          onSubmit={handleNameSubmit}
-          onCancel={name ? handleCancelNameChange : undefined}
-          initialName={name || ''}
-        />
-      )}
-
-      {currentUserDisplayName && activeUsers.length > 0 && (
-        <ActiveUsers
-          users={activeUsers}
-          currentUserName={currentUserDisplayName}
-        />
-      )}
-
-      <MobileMenu
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        currentUserDisplayName={currentUserDisplayName || undefined}
-        isOwner={isOwner}
-        isAuthenticated={isAuthenticated}
-        hasNextModule={hasNextModule}
-        transitioning={transitioning}
-        onNameClick={handleNameClick}
-        onNextModule={handleNextModule}
-        onCompleteSession={handleCompleteSession}
-      />
-
-      <ScrollHeader
-        scroll={scroll}
-        currentModuleIndex={currentModuleIndex}
-        isOwner={isOwner}
-        isAuthenticated={isAuthenticated}
-        hasNextModule={hasNextModule}
-        transitioning={transitioning}
-        currentUserDisplayName={currentUserDisplayName || undefined}
-        onNextModule={handleNextModule}
-        onCompleteSession={handleCompleteSession}
-        onNameClick={handleNameClick}
-        onMobileMenuOpen={() => setMobileMenuOpen(true)}
-      />
-
-      <main className="public-scroll-main">
-        {currentModule ? (
-          <ModuleRenderer
-            module={currentModule}
-            scrollId={scroll.id}
-            ideas={ideas}
-            isHost={isOwner}
-            userName={currentUserDisplayName}
-            moduleIndex={currentModuleIndex}
-            modules={scroll.modules}
+    <ScrollProvider activeUsersCount={activeUsers.length}>
+      <div className="public-scroll-container">
+        {showNamePrompt && (
+          <NamePrompt
+            onSubmit={handleNameSubmit}
+            onCancel={name ? handleCancelNameChange : undefined}
+            initialName={name || ''}
           />
-        ) : (
-          <div className="no-modules">
-            <p>No modules configured for this scroll.</p>
-          </div>
         )}
-      </main>
-    </div>
+
+        {currentUserDisplayName && activeUsers.length > 0 && (
+          <ActiveUsers
+            users={activeUsers}
+            currentUserName={currentUserDisplayName}
+          />
+        )}
+
+        <MobileMenu
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          currentUserDisplayName={currentUserDisplayName || undefined}
+          isOwner={isOwner}
+          isAuthenticated={isAuthenticated}
+          hasNextModule={hasNextModule}
+          transitioning={transitioning}
+          onNameClick={handleNameClick}
+          onNextModule={handleNextModule}
+          onCompleteSession={handleCompleteSession}
+        />
+
+        <ScrollHeader
+          scroll={scroll}
+          currentModuleIndex={currentModuleIndex}
+          isOwner={isOwner}
+          isAuthenticated={isAuthenticated}
+          hasNextModule={hasNextModule}
+          transitioning={transitioning}
+          currentUserDisplayName={currentUserDisplayName || undefined}
+          onNextModule={handleNextModule}
+          onCompleteSession={handleCompleteSession}
+          onNameClick={handleNameClick}
+          onMobileMenuOpen={() => setMobileMenuOpen(true)}
+        />
+
+        <main className="public-scroll-main">
+          {currentModule ? (
+            <ModuleRenderer
+              module={currentModule}
+              scrollId={scroll.id}
+              ideas={ideas}
+              isHost={isOwner}
+              userName={currentUserDisplayName}
+              moduleIndex={currentModuleIndex}
+              modules={scroll.modules}
+            />
+          ) : (
+            <div className="no-modules">
+              <p>No modules configured for this scroll.</p>
+            </div>
+          )}
+        </main>
+      </div>
+    </ScrollProvider>
   )
 }

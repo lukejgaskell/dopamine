@@ -46,9 +46,9 @@ export function ModuleRenderer({
   const renderModuleContent = () => {
     switch (module.type) {
       case 'brainstorm':
-        // Filter ideas for this brainstorm module
+        // Filter ideas for this brainstorm module (excluding deleted)
         const brainstormIdeas = ideas.filter(idea =>
-          idea.dataset_id === (module as any).dataset_id
+          idea.dataset_id === (module as any).dataset_id && !idea.deleted
         )
         return (
           <div className="module-brainstorm">
@@ -70,7 +70,7 @@ export function ModuleRenderer({
         )
 
       case 'vote':
-        const voteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const voteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-vote">
             <SimpleVoteView
@@ -87,7 +87,7 @@ export function ModuleRenderer({
         )
 
       case 'weighted_vote':
-        const weightedVoteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const weightedVoteIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-weighted-vote">
             <WeightedVoteView
@@ -105,7 +105,7 @@ export function ModuleRenderer({
         )
 
       case 'likert_vote':
-        const likertIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const likertIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-likert-vote">
             <VotingView
@@ -121,7 +121,7 @@ export function ModuleRenderer({
         )
 
       case 'rank_order':
-        const rankIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const rankIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-rank-order">
             <RankOrderView
@@ -138,7 +138,7 @@ export function ModuleRenderer({
         )
 
       case 'work_estimate':
-        const estimateIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const estimateIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-work-estimate">
             <WorkEstimateView
@@ -155,7 +155,7 @@ export function ModuleRenderer({
         )
 
       case 'grouping':
-        const groupingIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId)
+        const groupingIdeas = ideas.filter(idea => idea.dataset_id === activeDatasetId && !idea.deleted)
         return (
           <div className="module-grouping">
             <GroupingView
@@ -171,9 +171,9 @@ export function ModuleRenderer({
         )
 
       case 'dataset':
-        // Filter ideas for this dataset module
+        // Filter ideas for this dataset module (excluding deleted)
         const datasetIdeas = ideas.filter(idea =>
-          idea.dataset_id === (module as any).dataset_id
+          idea.dataset_id === (module as any).dataset_id && !idea.deleted
         )
         return (
           <div className="module-dataset">

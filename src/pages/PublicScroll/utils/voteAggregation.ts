@@ -62,7 +62,7 @@ export async function aggregateModuleResults(
         if (!weightedVotes[vote.created_by]) {
           weightedVotes[vote.created_by] = {}
         }
-        weightedVotes[vote.created_by][vote.idea_id] = vote.value
+        weightedVotes[vote.created_by][vote.idea_id] = Number(vote.value) || 0
       })
       results = { weightedVotes }
       break
@@ -75,7 +75,7 @@ export async function aggregateModuleResults(
         if (!ratings[vote.created_by]) {
           ratings[vote.created_by] = {}
         }
-        ratings[vote.created_by][vote.idea_id] = vote.value
+        ratings[vote.created_by][vote.idea_id] = Number(vote.value) || 0
       })
       results = { ratings }
       break
@@ -88,7 +88,7 @@ export async function aggregateModuleResults(
         if (!estimates[vote.created_by]) {
           estimates[vote.created_by] = {}
         }
-        estimates[vote.created_by][vote.idea_id] = vote.value
+        estimates[vote.created_by][vote.idea_id] = Number(vote.value) || 0
       })
       results = { estimates }
       break
@@ -103,7 +103,7 @@ export async function aggregateModuleResults(
         }
         // Store as [rank, ideaId] tuple for sorting
         rankings[vote.created_by].push({
-          rank: vote.value,
+          rank: Number(vote.value) || 0,
           ideaId: vote.idea_id,
         } as any)
       })

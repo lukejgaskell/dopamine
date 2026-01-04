@@ -3,13 +3,14 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { supabase } from '../../../lib/supabase';
 import type { Dataset } from '../../../types/dataset';
 import type { SidebarAction } from "../Layout";
-import { DatasetCard } from "../../Dashboard/components/DatasetCard";
-import { NewDatasetForm } from "../../Dashboard/components/NewDatasetForm";
+import { NewDatasetForm } from "./components/NewDatasetForm";
 import "./page.css";
 
 type ContextType = {
   setSidebarAction: (action: SidebarAction) => void;
 }
+
+const ITEMS_PER_PAGE = 20;
 
 export function DatasetsPage() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export function DatasetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Set sidebar action for this view
   useEffect(() => {
@@ -69,6 +71,17 @@ export function DatasetsPage() {
     navigate(`/datasets/${dataset.id}`);
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(datasets.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentDatasets = datasets.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (loading) {
     return <div className="datasets-loading">Loading datasets...</div>;
   }
@@ -92,15 +105,50 @@ export function DatasetsPage() {
             <p>No datasets yet. Create your first one!</p>
           </div>
         ) : (
-          <div className="datasets-grid">
-            {datasets.map((dataset) => (
-              <DatasetCard
-                key={dataset.id}
-                dataset={dataset}
-                onClick={() => handleDatasetClick(dataset)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="datasets-table">
+              <div className="datasets-table-header">
+                <div className="datasets-table-cell name-cell">Name</div>
+                <div className="datasets-table-cell date-cell">Created</div>
+              </div>
+              <div className="datasets-table-body">
+                {currentDatasets.map((dataset) => (
+                  <div
+                    key={dataset.id}
+                    className="datasets-table-row"
+                    onClick={() => handleDatasetClick(dataset)}
+                  >
+                    <div className="datasets-table-cell name-cell">{dataset.name}</div>
+                    <div className="datasets-table-cell date-cell">
+                      {new Date(dataset.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <div className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

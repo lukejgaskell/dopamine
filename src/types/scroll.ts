@@ -9,5 +9,4 @@ export type Scroll = {
   status: string
   step: string
   modules: ModuleConfig[]
-  selected_ideas?: string[]
 }

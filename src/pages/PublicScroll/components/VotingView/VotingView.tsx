@@ -26,6 +26,7 @@ export function VotingView({
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [allRatings, setAllRatings] = useState<Record<string, number[]>>({});
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -121,29 +122,49 @@ export function VotingView({
     };
   }, [ideas, scrollId, moduleId]);
 
-  const handleRating = (ideaId: string, rating: number) => {
+  const handleRating = async (ideaId: string, rating: number) => {
+    // Don't allow rating if already rated or no user
+    if (ratings[ideaId] || !currentUserId || submitting) return;
+
+    setSubmitting(ideaId);
+
+    // Optimistically update UI
     setRatings((prev) => ({
       ...prev,
       [ideaId]: rating,
     }));
-  };
-
-  const handleSubmit = async () => {
-    if (Object.keys(ratings).length === 0 || !currentUserId) return;
-
-    // Convert ratings to vote records
-    const voteRecords = Object.entries(ratings).map(([ideaId, value]) => ({
-      created_by: currentUserId,
-      scroll_id: scrollId,
-      idea_id: ideaId,
-      module_id: moduleId,
-      value: value,
+    setAllRatings((prev) => ({
+      ...prev,
+      [ideaId]: [...(prev[ideaId] || []), rating],
     }));
 
-    // Insert votes
-    await supabase
-      .from('votes')
-      .insert(voteRecords);
+    try {
+      const { error } = await supabase
+        .from('votes')
+        .insert({
+          created_by: currentUserId,
+          scroll_id: scrollId,
+          idea_id: ideaId,
+          module_id: moduleId,
+          value: rating,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      // Revert optimistic update on error
+      console.error('Error casting rating:', error);
+      setRatings((prev) => {
+        const newRatings = { ...prev };
+        delete newRatings[ideaId];
+        return newRatings;
+      });
+      setAllRatings((prev) => ({
+        ...prev,
+        [ideaId]: (prev[ideaId] || []).slice(0, -1),
+      }));
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   // Calculate average rating for an idea
@@ -165,38 +186,34 @@ export function VotingView({
         <p>Rate each idea from 1 to 5 ({ratedCount}/{ideas.length} rated)</p>
       </div>
       <div className="voting-list">
-        {sortedIdeas.map((idea) => (
-          <div
-            key={idea.id}
-            className={`voting-card ${ratings[idea.id] ? "rated" : ""}`}
-          >
-            <div className="voting-card-content">
-              <p className="voting-card-text">{idea.text}</p>
-            </div>
-            <div className="voting-card-rating">
-              <div className="rating-buttons">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    className={`rating-button ${ratings[idea.id] === rating ? "selected" : ""}`}
-                    onClick={() => handleRating(idea.id, rating)}
-                  >
-                    {rating}
-                  </button>
-                ))}
+        {sortedIdeas.map((idea) => {
+          const isRated = !!ratings[idea.id];
+          const isSubmitting = submitting === idea.id;
+          return (
+            <div
+              key={idea.id}
+              className={`voting-card ${isRated ? "rated" : ""} ${isSubmitting ? "submitting" : ""}`}
+            >
+              <div className="voting-card-content">
+                <p className="voting-card-text">{idea.text}</p>
+              </div>
+              <div className="voting-card-rating">
+                <div className="rating-buttons">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      className={`rating-button ${ratings[idea.id] === rating ? "selected" : ""}`}
+                      onClick={() => handleRating(idea.id, rating)}
+                      disabled={isRated || isSubmitting}
+                    >
+                      {rating}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <div className="voting-submit">
-        <button
-          className="submit-ratings-btn"
-          onClick={handleSubmit}
-          disabled={ratedCount === 0}
-        >
-          Submit Ratings
-        </button>
+          );
+        })}
       </div>
     </div>
   );

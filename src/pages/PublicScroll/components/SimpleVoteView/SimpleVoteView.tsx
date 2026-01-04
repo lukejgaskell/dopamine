@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { supabase } from '../../../../lib/supabase';
-import type { Idea } from '../../../../types/idea';
-import type { ModuleConfig, ModuleResults } from '../../../../types/module';
+import { supabase } from '@/lib/supabase';
+import type { Idea } from '@/types/idea';
+import type { ModuleConfig, ModuleResults } from '@/types/module';
+import { useScrollContext } from '../../context';
 import "./SimpleVoteView.css";
 
 type SimpleVoteViewProps = {
@@ -25,9 +26,13 @@ export function SimpleVoteView({
   userName: _userName,
   results: _results,
 }: SimpleVoteViewProps) {
-  const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
+  const { activeUsersCount } = useScrollContext();
+  const [userVoteCount, setUserVoteCount] = useState(0);
+  const [userVotesPerIdea, setUserVotesPerIdea] = useState<Record<string, number>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+  const [totalVotesCast, setTotalVotesCast] = useState(0);
+  const [voting, setVoting] = useState(false);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -50,7 +55,7 @@ export function SimpleVoteView({
 
       setCurrentUserId(user.id);
 
-      // Load user's existing votes for these ideas
+      // Load user's existing votes for these ideas (count per idea)
       const ideaIds = ideas.map(i => i.id);
       const { data: userVotes } = await supabase
         .from('votes')
@@ -61,15 +66,19 @@ export function SimpleVoteView({
         .in('idea_id', ideaIds);
 
       if (userVotes && userVotes.length > 0) {
-        const votedSet = new Set(userVotes.map(v => v.idea_id));
-        setVotedIdeas(votedSet);
+        const votesPerIdea: Record<string, number> = {};
+        userVotes.forEach(v => {
+          votesPerIdea[v.idea_id] = (votesPerIdea[v.idea_id] || 0) + 1;
+        });
+        setUserVotesPerIdea(votesPerIdea);
+        setUserVoteCount(userVotes.length);
       }
     };
 
     if (ideas.length > 0) {
       loadUserData();
     }
-  }, [ideas, scrollId]);
+  }, [ideas, scrollId, moduleId]);
 
   // Load vote counts for all ideas
   useEffect(() => {
@@ -88,6 +97,7 @@ export function SimpleVoteView({
           counts[vote.idea_id] = (counts[vote.idea_id] || 0) + 1;
         });
         setVoteCounts(counts);
+        setTotalVotesCast(votes.length);
       }
     };
 
@@ -97,7 +107,7 @@ export function SimpleVoteView({
 
     // Subscribe to vote changes
     const channel = supabase
-      .channel(`votes:${scrollId}`)
+      .channel(`votes:${scrollId}:${moduleId}`)
       .on(
         'postgres_changes',
         {
@@ -117,93 +127,120 @@ export function SimpleVoteView({
     };
   }, [ideas, scrollId, moduleId]);
 
-  const saveResults = async (newVotedIdeas: Set<string>) => {
+  const handleVote = async (ideaId: string) => {
     if (!currentUserId) return;
+    if (userVoteCount >= maxVotes) return;
+    if (voting) return;
 
-    // Convert votes to vote records (value = 1 for simple votes)
-    const voteRecords = Array.from(newVotedIdeas).map(ideaId => ({
-      created_by: currentUserId,
-      scroll_id: scrollId,
-      idea_id: ideaId,
-      module_id: moduleId,
-      value: 1,
+    setVoting(true);
+
+    // Optimistically update UI
+    setUserVoteCount(prev => prev + 1);
+    setUserVotesPerIdea(prev => ({
+      ...prev,
+      [ideaId]: (prev[ideaId] || 0) + 1
+    }));
+    setVoteCounts(prev => ({
+      ...prev,
+      [ideaId]: (prev[ideaId] || 0) + 1
     }));
 
-    // Insert votes
-    await supabase
-      .from('votes')
-      .insert(voteRecords);
-  };
+    try {
+      // Insert the vote immediately
+      const { error } = await supabase
+        .from('votes')
+        .insert({
+          created_by: currentUserId,
+          scroll_id: scrollId,
+          idea_id: ideaId,
+          module_id: moduleId,
+          value: 1,
+        });
 
-  const handleVote = async (ideaId: string) => {
-    if (votedIdeas.has(ideaId)) return;
-    if (votedIdeas.size >= maxVotes) return;
-
-    const newVotedIdeas = new Set([...votedIdeas, ideaId]);
-    setVotedIdeas(newVotedIdeas);
-
-    // Auto-submit when max votes reached
-    if (newVotedIdeas.size >= maxVotes) {
-      await saveResults(newVotedIdeas);
+      if (error) throw error;
+    } catch (error) {
+      // Revert optimistic update on error
+      console.error('Error casting vote:', error);
+      setUserVoteCount(prev => prev - 1);
+      setUserVotesPerIdea(prev => ({
+        ...prev,
+        [ideaId]: Math.max((prev[ideaId] || 1) - 1, 0)
+      }));
+      setVoteCounts(prev => ({
+        ...prev,
+        [ideaId]: Math.max((prev[ideaId] || 1) - 1, 0)
+      }));
+    } finally {
+      setVoting(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (votedIdeas.size === 0) return;
-    await saveResults(votedIdeas);
-  };
-
-  // Calculate vote counts from voteCounts state
   const getVoteCount = (ideaId: string) => {
     return voteCounts[ideaId] || 0;
+  };
+
+  const getUserVotesForIdea = (ideaId: string) => {
+    return userVotesPerIdea[ideaId] || 0;
   };
 
   const sortedIdeas = [...ideas].sort(
     (a, b) => getVoteCount(b.id) - getVoteCount(a.id)
   );
-  const remainingVotes = maxVotes - votedIdeas.size;
+  const remainingVotes = maxVotes - userVoteCount;
+  const totalPossibleVotes = activeUsersCount * maxVotes;
+  const remainingSessionVotes = totalPossibleVotes - totalVotesCast;
 
   return (
     <div className="simple-vote-view">
-      <div className="vote-instructions">
-        <p>
-          Click to vote for your favorites. You have{" "}
-          <strong>{remainingVotes}</strong> vote{remainingVotes !== 1 ? "s" : ""}{" "}
-          remaining.
-        </p>
+      <div className="vote-header">
+        <div className="vote-instructions">
+          <p>
+            Click to vote for your favorites. You have{" "}
+            <strong>{remainingVotes}</strong> vote{remainingVotes !== 1 ? "s" : ""}{" "}
+            remaining.
+          </p>
+        </div>
+        <div className="vote-session-stats">
+          <span className="session-votes-count">{totalVotesCast}</span>
+          <span className="session-votes-label">votes cast</span>
+          {activeUsersCount > 0 && (
+            <>
+              <span className="session-votes-divider">|</span>
+              <span className="session-votes-remaining">{remainingSessionVotes}</span>
+              <span className="session-votes-label">remaining</span>
+            </>
+          )}
+        </div>
       </div>
       <div className="simple-vote-list">
-        {sortedIdeas.map((idea) => (
-          <div
-            key={idea.id}
-            className={`simple-vote-card ${votedIdeas.has(idea.id) ? "voted" : ""} ${
-              remainingVotes === 0 && !votedIdeas.has(idea.id) ? "disabled" : ""
-            }`}
-            onClick={() => handleVote(idea.id)}
-          >
-            <div className="simple-vote-card-content">
-              <p className="simple-vote-card-text">{idea.text}</p>
+        {sortedIdeas.map((idea) => {
+          const userVotes = getUserVotesForIdea(idea.id);
+          const hasVoted = userVotes > 0;
+          return (
+            <div
+              key={idea.id}
+              className={`simple-vote-card ${hasVoted ? "voted" : ""} ${
+                remainingVotes === 0 ? "disabled" : ""
+              }`}
+              onClick={() => handleVote(idea.id)}
+            >
+              <div className="simple-vote-card-content">
+                <p className="simple-vote-card-text">{idea.text}</p>
+              </div>
+              <div className="simple-vote-card-action">
+                {hasVoted ? (
+                  <span className="vote-checkmark">+{userVotes}</span>
+                ) : (
+                  <span className="vote-icon">+1</span>
+                )}
+              </div>
+              <div className="simple-vote-count">
+                <span className="count-number">{getVoteCount(idea.id)}</span>
+              </div>
             </div>
-            <div className="simple-vote-card-action">
-              {votedIdeas.has(idea.id) ? (
-                <span className="vote-checkmark">✓</span>
-              ) : (
-                <span className="vote-icon">+1</span>
-              )}
-            </div>
-            <div className="simple-vote-count">
-              <span className="count-number">{getVoteCount(idea.id)}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      {votedIdeas.size > 0 && votedIdeas.size < maxVotes && (
-        <div className="simple-vote-submit">
-          <button className="submit-votes-btn" onClick={handleSubmit}>
-            Submit {votedIdeas.size} Vote{votedIdeas.size !== 1 ? "s" : ""}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

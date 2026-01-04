@@ -11,7 +11,7 @@ import { EditTrendPage } from './pages/(dashboard)/trends/[id]/page'
 import { DatasetsPage } from './pages/(dashboard)/datasets/page'
 import { EditDatasetPage } from './pages/(dashboard)/datasets/[id]/page'
 import { PublicScroll } from './pages/PublicScroll'
-import { ScrollResultsPage } from './pages/Dashboard/components/ScrollResultsPage'
+import { Results } from './pages/Results'
 import './App.css'
 
 // Re-export SidebarAction for backward compatibility
@@ -51,6 +51,11 @@ function App() {
         {/* Auth route */}
         <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/scrolls" replace />} />
 
+        {/* Results page (requires auth, has its own layout) */}
+        {session && (
+          <Route path="/results/:id" element={<Results />} />
+        )}
+
         {/* Dashboard routes (requires auth) */}
         {session ? (
           <Route element={<DashboardLayout session={session} />}>
@@ -60,7 +65,6 @@ function App() {
             <Route path="/trends/:id" element={<EditTrendPage />} />
             <Route path="/datasets" element={<DatasetsPage />} />
             <Route path="/datasets/:id" element={<EditDatasetPage />} />
-            <Route path="/results/:id" element={<ScrollResultsPage />} />
             <Route path="/" element={<Navigate to="/scrolls" replace />} />
           </Route>
         ) : (

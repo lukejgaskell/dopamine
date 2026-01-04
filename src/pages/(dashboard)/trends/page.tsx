@@ -3,13 +3,14 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { supabase } from '../../../lib/supabase';
 import type { Trend } from '../../../types/trend';
 import type { SidebarAction } from "../Layout";
-import { TrendCard } from "../../Dashboard/components/TrendCard";
-import { NewTrendForm } from "../../Dashboard/components/NewTrendForm";
+import { NewTrendForm } from "./components/NewTrendForm";
 import "./page.css";
 
 type ContextType = {
   setSidebarAction: (action: SidebarAction) => void;
 }
+
+const ITEMS_PER_PAGE = 20;
 
 export function TrendsPage() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export function TrendsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Set sidebar action for this view
   useEffect(() => {
@@ -69,6 +71,17 @@ export function TrendsPage() {
     navigate(`/trends/${trend.id}`);
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(trends.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentTrends = trends.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (loading) {
     return <div className="trends-loading">Loading trends...</div>;
   }
@@ -92,15 +105,50 @@ export function TrendsPage() {
             <p>No trends yet. Create your first one!</p>
           </div>
         ) : (
-          <div className="trends-grid">
-            {trends.map((trend) => (
-              <TrendCard
-                key={trend.id}
-                trend={trend}
-                onClick={() => handleTrendClick(trend)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="trends-table">
+              <div className="trends-table-header">
+                <div className="trends-table-cell name-cell">Name</div>
+                <div className="trends-table-cell date-cell">Created</div>
+              </div>
+              <div className="trends-table-body">
+                {currentTrends.map((trend) => (
+                  <div
+                    key={trend.id}
+                    className="trends-table-row"
+                    onClick={() => handleTrendClick(trend)}
+                  >
+                    <div className="trends-table-cell name-cell">{trend.name}</div>
+                    <div className="trends-table-cell date-cell">
+                      {new Date(trend.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <div className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@
 - **State Management**: Zustand with persist middleware
 - **Routing**: React Router DOM
 - **Styling**: CSS with CSS Variables for theming
+- **Module Paths**: TypeScript path aliases configured (`@/` = `./src/`)
 
 ## Theming System
 All colors are defined in `src/theme.css` using CSS variables:
@@ -64,17 +65,34 @@ All colors are defined in `src/theme.css` using CSS variables:
     - Each component follows the same folder structure
     - Components used by only one page should be co-located with that page
 - `/components` - Truly shared components (used across multiple pages)
-  - Currently only contains `Logo` (used in Auth, Dashboard, PublicScroll)
+  - Shared components like `ModuleConfigEditor`, `Logo`
   - Follow same folder structure as page components
   - Only add components here if they're used by 2+ pages
+- `/styles` - Shared CSS files
+  - For reusable styles used across multiple components
+  - Imported via `@/styles/filename.css`
+  - Examples: `forms.css`, `dataset-forms.css`, `trend-forms.css`
 - `/types` - TypeScript type definitions (Scroll, Idea, Module)
   - **Always use `type` declarations**, never `interface`
   - For type composition, use intersection types (`&`) instead of `extends`
 - `/store` - Zustand stores
 - `/lib` - Supabase client setup
 
+### Import Patterns
+- **Always use module path aliases** instead of relative paths:
+  - `import { supabase } from '@/lib/supabase'` ✓
+  - `import type { Scroll } from '@/types/scroll'` ✓
+  - `import { Logo } from '@/components/Logo'` ✓
+  - `import '@/styles/forms.css'` ✓
+  - NOT `import { supabase } from '../../../../lib/supabase'` ✗
+- **Exception**: Local CSS imports use relative paths:
+  - `import './ComponentName.css'` ✓
+
 ### Styling Patterns
-- Component-specific CSS files (e.g., `ComponentName.css`)
+- **CSS Import Rules**:
+  - Components should ONLY import CSS from their own folder (e.g., `import './ComponentName.css'`)
+  - Shared/reusable styles must be in `src/styles/` and imported via module path (e.g., `import '@/styles/forms.css'`)
+  - Never import CSS from other component folders
 - Use theme variables for all colors
 - Common patterns:
   - Cards: `var(--bg-card)` with `var(--border-color)` border

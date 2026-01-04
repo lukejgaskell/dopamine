@@ -1,1 +1,0 @@
-export { ScrollResultsPage } from './ScrollResultsPage'

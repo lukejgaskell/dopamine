@@ -19,15 +19,15 @@
 
   --modal-overlay: rgba(0, 0, 0, 0.5);
 
-  /* Status colors (same for both modes) */
-  --status-draft-bg: rgba(136, 136, 136, 0.15);
-  --status-draft-text: #666666;
+  /* Status colors - Light mode */
+  --status-draft-bg: rgba(120, 110, 100, 0.18);
+  --status-draft-text: #5c5347;
 
-  --status-active-bg: rgba(76, 175, 80, 0.15);
-  --status-active-text: #2e7d32;
+  --status-active-bg: rgba(34, 154, 72, 0.2);
+  --status-active-text: #18794e;
 
-  --status-completed-bg: rgba(33, 150, 243, 0.15);
-  --status-completed-text: #1565c0;
+  --status-completed-bg: rgba(37, 99, 235, 0.18);
+  --status-completed-text: #1d4ed8;
 
   /* Action colors */
   --primary-bg: #646cff;
@@ -66,13 +66,17 @@
 
     --modal-overlay: rgba(0, 0, 0, 0.7);
 
-    --status-draft-bg: rgba(136, 136, 136, 0.2);
-    --status-draft-text: #888888;
+    /* Status colors - Dark mode */
+    --status-draft-bg: rgba(160, 160, 160, 0.18);
+    --status-draft-text: #a0a0a0;
 
-    --status-active-bg: rgba(76, 175, 80, 0.2);
-    --status-active-text: #4caf50;
+    --status-active-bg: rgba(52, 211, 102, 0.22);
+    --status-active-text: #34d366;
 
-    --status-completed-bg: rgba(33, 150, 243, 0.2);
-    --status-completed-text: #2196f3;
+    --status-completed-bg: rgba(59, 130, 246, 0.22);
+    --status-completed-text: #60a5fa;
+
+    /* Action colors - Dark mode */
+    --success-bg: #22c55e;
   }
 }

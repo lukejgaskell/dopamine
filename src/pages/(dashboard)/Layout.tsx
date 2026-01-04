@@ -186,7 +186,20 @@ export function DashboardLayout({ session }: LayoutProps) {
               style={{ background: getAvatarGradient() }}
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
-              {getUsername()}
+              <span className="user-avatar-name">{getUsername()}</span>
+              <svg
+                className="user-avatar-chevron"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </button>
             {showUserMenu && (
               <div className="user-menu">

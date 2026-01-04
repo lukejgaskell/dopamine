@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from '../../../../components/Logo';
 import type { Scroll } from "../../../../types/scroll";
 import type { Idea } from "../../../../types/idea";
 import "./ModuleResultsView.css";
+
+const ITEMS_PER_PAGE = 20;
 
 type ModuleResultsViewProps = {
   scroll: Scroll;
@@ -32,6 +35,7 @@ export function ModuleResultsView({
   onToggleSelectAll,
 }: ModuleResultsViewProps) {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
   const currentModule = scroll.modules[currentModuleIndex] as any;
   const moduleResults = currentModule.results || {};
 
@@ -50,7 +54,10 @@ export function ModuleResultsView({
     ? currentModule.dataset_id
     : getActiveDatasetId();
 
-  const datasetIdeas = ideas.filter(idea => idea.dataset_id === datasetId);
+  const datasetIdeas = ideas.filter(idea => idea.dataset_id === datasetId && !idea.deleted);
+
+  // Count only selected ideas that are in the current dataset
+  const selectedCount = datasetIdeas.filter(idea => selectedIdeaIds.has(idea.id)).length;
 
   // Calculate display value for each idea based on module type
   const getIdeaMetric = (ideaId: string): { label: string; value: string } | null => {
@@ -62,15 +69,15 @@ export function ModuleResultsView({
       case 'weighted_vote': {
         let total = 0;
         Object.values(moduleResults.weightedVotes || {}).forEach((userVotes: any) => {
-          total += userVotes[ideaId] || 0;
+          total += Number(userVotes[ideaId] || 0);
         });
         return { label: 'points', value: total.toString() };
       }
       case 'likert_vote': {
         const ratings: number[] = [];
         Object.values(moduleResults.ratings || {}).forEach((userRatings: any) => {
-          if (userRatings[ideaId]) {
-            ratings.push(userRatings[ideaId]);
+          if (userRatings[ideaId] !== undefined) {
+            ratings.push(Number(userRatings[ideaId]));
           }
         });
         const avg = ratings.length > 0
@@ -81,8 +88,8 @@ export function ModuleResultsView({
       case 'work_estimate': {
         const estimates: number[] = [];
         Object.values(moduleResults.estimates || {}).forEach((userEstimates: any) => {
-          if (userEstimates[ideaId]) {
-            estimates.push(userEstimates[ideaId]);
+          if (userEstimates[ideaId] !== undefined) {
+            estimates.push(Number(userEstimates[ideaId]));
           }
         });
         const avg = estimates.length > 0
@@ -116,6 +123,16 @@ export function ModuleResultsView({
     if (!metricA || !metricB) return 0;
     return parseFloat(metricB.value) - parseFloat(metricA.value);
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedIdeas.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentIdeas = sortedIdeas.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="public-scroll-container">
@@ -154,18 +171,18 @@ export function ModuleResultsView({
           {isOwner && hasNextModule && (
             <div className="module-results-selection-header">
               <span className="module-results-selection-count">
-                {selectedIdeaIds.size} of {datasetIdeas.length} selected to continue
+                {selectedCount} of {datasetIdeas.length} selected to continue
               </span>
               <button
                 onClick={onToggleSelectAll}
                 className="module-results-select-all-btn"
               >
-                {selectedIdeaIds.size === datasetIdeas.length ? 'Deselect All' : 'Select All'}
+                {selectedCount === datasetIdeas.length ? 'Deselect All' : 'Select All'}
               </button>
             </div>
           )}
           <div className="module-results-ideas-list">
-            {sortedIdeas.map((idea) => {
+            {currentIdeas.map((idea) => {
               const metric = getIdeaMetric(idea.id);
               const isSelected = selectedIdeaIds.has(idea.id);
               return (
@@ -200,6 +217,27 @@ export function ModuleResultsView({
               );
             })}
           </div>
+          {totalPages > 1 && (
+            <div className="module-results-pagination">
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <div className="pagination-info">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

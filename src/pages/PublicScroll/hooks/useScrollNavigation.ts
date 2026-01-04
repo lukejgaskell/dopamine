@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
-import type { Scroll } from '../../../types/scroll'
-import type { Idea } from '../../../types/idea'
+import { supabase } from '@/lib/supabase'
+import type { Scroll } from '@/types/scroll'
+import type { Idea } from '@/types/idea'
 import { aggregateModuleResults, getActiveDatasetId, isVotingModule } from '../utils'
 
 type UseScrollNavigationParams = {
@@ -12,6 +12,8 @@ type UseScrollNavigationParams = {
   setShowingModuleResults: (showing: boolean) => void
   fetchScrollData: () => Promise<void>
   ideas: Idea[]
+  onError?: (message: string) => void
+  onNavigateToResults?: (scrollId: string) => void
 }
 
 type UseScrollNavigationReturn = {
@@ -24,8 +26,6 @@ type UseScrollNavigationReturn = {
   handleStartSession: () => Promise<void>
   toggleIdeaSelection: (ideaId: string) => void
   toggleSelectAll: (datasetIdeas: Idea[]) => void
-  setShowResults: (show: boolean) => void
-  showResults: boolean
 }
 
 export function useScrollNavigation({
@@ -36,17 +36,21 @@ export function useScrollNavigation({
   setShowingModuleResults,
   fetchScrollData,
   ideas,
+  onError,
+  onNavigateToResults,
 }: UseScrollNavigationParams): UseScrollNavigationReturn {
   const [transitioning, setTransitioning] = useState(false)
   const [selectedIdeaIds, setSelectedIdeaIds] = useState<Set<string>>(new Set())
-  const [showResults, setShowResults] = useState(false)
 
-  // Sync scroll's selected_ideas to local state for participants
+  // Sync module's selected_ideas to local state for participants
   useEffect(() => {
-    if (!isOwner && scroll?.selected_ideas) {
-      setSelectedIdeaIds(new Set<string>(scroll.selected_ideas))
+    if (!isOwner && scroll?.modules?.[currentModuleIndex]) {
+      const currentModule = scroll.modules[currentModuleIndex] as any
+      if (currentModule.selected_ideas) {
+        setSelectedIdeaIds(new Set<string>(currentModule.selected_ideas))
+      }
     }
-  }, [scroll?.selected_ideas, isOwner])
+  }, [scroll?.modules, currentModuleIndex, isOwner])
 
   const handleNextModule = async () => {
     if (!scroll || !isOwner || !scroll.modules) return
@@ -63,24 +67,39 @@ export function useScrollNavigation({
         await aggregateModuleResults(scroll, currentModuleIndex, (idx) =>
           getActiveDatasetId(scroll.modules, idx)
         )
-
-        // Refresh scroll data to get the updated results
-        await fetchScrollData()
       }
 
       // Reset selection state
       setSelectedIdeaIds(new Set())
 
-      // Show results for current module to all users (both voting and non-voting)
+      // Fetch fresh modules from database to preserve aggregated results
+      const { data: freshScroll } = await supabase
+        .from('scrolls')
+        .select('modules')
+        .eq('id', scroll.id)
+        .single()
+
+      if (!freshScroll) throw new Error('Failed to fetch scroll data')
+
+      // Reset module's selected_ideas while preserving results
+      const updatedModules = [...freshScroll.modules]
+      updatedModules[currentModuleIndex] = {
+        ...updatedModules[currentModuleIndex],
+        selected_ideas: []
+      }
+
       const { error } = await supabase
         .from('scrolls')
         .update({
           step: `module-${currentModuleIndex}-results`,
-          selected_ideas: []
+          modules: updatedModules
         })
         .eq('id', scroll.id)
 
       if (error) throw error
+
+      // Refresh scroll data to get the updated results
+      await fetchScrollData()
       setShowingModuleResults(true)
     } catch (error: any) {
       console.error('Error advancing module:', error)
@@ -105,9 +124,9 @@ export function useScrollNavigation({
           : getActiveDatasetId(scroll.modules, currentModuleIndex)
 
       if (datasetId) {
-        // Get all ideas for this dataset
+        // Get all ideas for this dataset (excluding already deleted ones)
         const allDatasetIdeas = ideas.filter(
-          (idea) => idea.dataset_id === datasetId
+          (idea) => idea.dataset_id === datasetId && !idea.deleted
         )
 
         // Find unselected ideas
@@ -115,32 +134,43 @@ export function useScrollNavigation({
           .filter((idea) => !selectedIdeaIds.has(idea.id))
           .map((idea) => idea.id)
 
-        // Delete unselected ideas from the database
+        // Mark unselected ideas as deleted
         if (unselectedIds.length > 0) {
+          console.log(`Marking ${unselectedIds.length} unselected ideas as deleted for next module`)
+
           const { error: deleteError } = await supabase
             .from('ideas')
-            .delete()
+            .update({ deleted: true })
             .in('id', unselectedIds)
 
           if (deleteError) {
-            console.error('Error deleting unselected ideas:', deleteError)
+            console.error('Error marking ideas as deleted:', deleteError)
             throw deleteError
           }
 
-          // Wait a moment for the realtime subscription to process the deletes
-          await new Promise(resolve => setTimeout(resolve, 300))
+          // Wait for the realtime subscription to process the updates
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          // Refresh scroll data to ensure we have the latest ideas
+          await fetchScrollData()
         }
       }
 
       // Reset selection for next time
       setSelectedIdeaIds(new Set())
 
-      // Advance to next module
+      // Reset current module's selected_ideas and advance to next module
+      const updatedModules = [...scroll.modules]
+      updatedModules[currentModuleIndex] = {
+        ...updatedModules[currentModuleIndex],
+        selected_ideas: []
+      }
+
       const { error } = await supabase
         .from('scrolls')
         .update({
           step: `module-${nextIndex}`,
-          selected_ideas: []
+          modules: updatedModules
         })
         .eq('id', scroll.id)
 
@@ -171,9 +201,10 @@ export function useScrollNavigation({
 
       if (error) throw error
 
-      // Show results after completing
-      await fetchScrollData()
-      setShowResults(true)
+      // Navigate to results page
+      if (onNavigateToResults) {
+        onNavigateToResults(scroll.id)
+      }
     } catch (error: any) {
       console.error('Error completing session:', error)
     } finally {
@@ -237,7 +268,7 @@ export function useScrollNavigation({
       await fetchScrollData()
     } catch (error: any) {
       console.error('Error activating links:', error)
-      alert('Failed to activate links: ' + error.message)
+      onError?.('Failed to activate links: ' + error.message)
     } finally {
       setTransitioning(false)
     }
@@ -272,11 +303,17 @@ export function useScrollNavigation({
     setSelectedIdeaIds(newSelection)
 
     // Persist selections to database if owner
-    if (isOwner && scroll) {
+    if (isOwner && scroll && scroll.modules) {
       try {
+        const updatedModules = [...scroll.modules]
+        updatedModules[currentModuleIndex] = {
+          ...updatedModules[currentModuleIndex],
+          selected_ideas: Array.from(newSelection)
+        }
+
         await supabase
           .from('scrolls')
-          .update({ selected_ideas: Array.from(newSelection) })
+          .update({ modules: updatedModules })
           .eq('id', scroll.id)
       } catch (error) {
         console.error('Error updating selected ideas:', error)
@@ -285,18 +322,26 @@ export function useScrollNavigation({
   }
 
   const toggleSelectAll = async (datasetIdeas: Idea[]) => {
-    const newSelection = selectedIdeaIds.size === datasetIdeas.length
+    // Count only selected items that are in the current dataset
+    const currentlySelectedCount = datasetIdeas.filter(idea => selectedIdeaIds.has(idea.id)).length
+    const newSelection = currentlySelectedCount === datasetIdeas.length
       ? new Set<string>()
       : new Set<string>(datasetIdeas.map((i) => i.id))
 
     setSelectedIdeaIds(newSelection)
 
     // Persist selections to database if owner
-    if (isOwner && scroll) {
+    if (isOwner && scroll && scroll.modules) {
       try {
+        const updatedModules = [...scroll.modules]
+        updatedModules[currentModuleIndex] = {
+          ...updatedModules[currentModuleIndex],
+          selected_ideas: Array.from(newSelection)
+        }
+
         await supabase
           .from('scrolls')
-          .update({ selected_ideas: Array.from(newSelection) })
+          .update({ modules: updatedModules })
           .eq('id', scroll.id)
       } catch (error) {
         console.error('Error updating selected ideas:', error)
@@ -314,7 +359,5 @@ export function useScrollNavigation({
     handleStartSession,
     toggleIdeaSelection,
     toggleSelectAll,
-    showResults,
-    setShowResults,
   }
 }

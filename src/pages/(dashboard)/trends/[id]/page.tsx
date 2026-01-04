@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../../lib/supabase";
 import type { Trend } from "../../../../types/trend";
-import { EditTrendForm } from "../../../Dashboard/components/EditTrendForm";
+import { EditTrendForm } from "./components/EditTrendForm";
 import "./page.css";
 
 export function EditTrendPage() {

@@ -6,4 +6,5 @@ export type Idea = {
   dataset_id?: string | null
   unique_user_id?: string | null
   created_by?: string | null
+  deleted?: boolean
 }

@@ -1,1 +1,0 @@
-export { ScrollCard } from './ScrollCard'

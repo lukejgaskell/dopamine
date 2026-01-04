@@ -3,6 +3,10 @@
   width: 60%;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .module-results-selection-header {
@@ -13,6 +17,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .module-results-selection-count {
@@ -40,6 +45,8 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .module-results-idea-card {
@@ -101,4 +108,53 @@
   font-size: 0.75rem;
   color: var(--text-secondary);
   text-transform: uppercase;
+}
+
+.module-results-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: 1rem;
+}
+
+.module-results-pagination .pagination-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-results-pagination .pagination-btn:hover:not(:disabled) {
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  border-color: var(--primary-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.module-results-pagination .pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.module-results-pagination .pagination-info {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .module-results-content {
+    width: 100%;
+    padding: 1rem;
+  }
 }

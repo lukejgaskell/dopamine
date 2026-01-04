@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../../lib/supabase";
 import type { Scroll } from "../../../../types/scroll";
-import { EditScrollForm } from "../../../Dashboard/components/EditScrollForm";
+import { EditScrollForm } from "./components/EditScrollForm";
 import "./page.css";
 
 export function EditScrollPage() {

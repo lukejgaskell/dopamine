@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../../lib/supabase";
 import type { Dataset } from "../../../../types/dataset";
-import { EditDatasetForm } from "../../../Dashboard/components/EditDatasetForm";
+import { EditDatasetForm } from "./components/EditDatasetForm";
 import "./page.css";
 
 export function EditDatasetPage() {

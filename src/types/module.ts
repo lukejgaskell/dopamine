@@ -67,6 +67,7 @@ export type BaseModuleConfig = {
   prompt?: string
   timerState?: TimerState
   results?: ModuleResults
+  selected_ideas?: string[]
 }
 
 export type BrainstormModuleConfig = BaseModuleConfig & {
