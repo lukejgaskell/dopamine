@@ -68,7 +68,7 @@ export function TrendsPage() {
   };
 
   const handleTrendClick = (trend: Trend) => {
-    navigate(`/trends/${trend.id}`);
+    navigate(`/app/trends/${trend.id}`);
   };
 
   // Pagination calculations

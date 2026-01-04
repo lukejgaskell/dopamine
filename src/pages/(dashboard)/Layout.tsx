@@ -26,9 +26,9 @@ export function DashboardLayout({ session }: LayoutProps) {
 
   // Determine active view from current path
   const getActiveView = () => {
-    if (location.pathname.startsWith('/scrolls')) return 'scrolls'
-    if (location.pathname.startsWith('/trends')) return 'trends'
-    if (location.pathname.startsWith('/datasets')) return 'datasets'
+    if (location.pathname.startsWith('/app/scrolls')) return 'scrolls'
+    if (location.pathname.startsWith('/app/trends')) return 'trends'
+    if (location.pathname.startsWith('/app/datasets')) return 'datasets'
     return 'scrolls'
   }
 
@@ -85,9 +85,9 @@ export function DashboardLayout({ session }: LayoutProps) {
 
   // Get current page title for mobile
   const getPageTitle = () => {
-    if (location.pathname.startsWith('/scrolls')) return 'Scrolls'
-    if (location.pathname.startsWith('/trends')) return 'Trends'
-    if (location.pathname.startsWith('/datasets')) return 'Datasets'
+    if (location.pathname.startsWith('/app/scrolls')) return 'Scrolls'
+    if (location.pathname.startsWith('/app/trends')) return 'Trends'
+    if (location.pathname.startsWith('/app/datasets')) return 'Datasets'
     return 'Scrolls'
   }
 
@@ -109,7 +109,7 @@ export function DashboardLayout({ session }: LayoutProps) {
           <button
             className={`nav-item ${activeView === 'scrolls' ? 'active' : ''}`}
             onClick={() => {
-              navigate('/scrolls')
+              navigate('/app/scrolls')
               setShowMobileSidebar(false)
             }}
           >
@@ -125,7 +125,7 @@ export function DashboardLayout({ session }: LayoutProps) {
           <button
             className={`nav-item ${activeView === 'trends' ? 'active' : ''}`}
             onClick={() => {
-              navigate('/trends')
+              navigate('/app/trends')
               setShowMobileSidebar(false)
             }}
           >
@@ -138,7 +138,7 @@ export function DashboardLayout({ session }: LayoutProps) {
           <button
             className={`nav-item ${activeView === 'datasets' ? 'active' : ''}`}
             onClick={() => {
-              navigate('/datasets')
+              navigate('/app/datasets')
               setShowMobileSidebar(false)
             }}
           >

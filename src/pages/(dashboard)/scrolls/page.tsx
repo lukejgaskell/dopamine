@@ -83,11 +83,11 @@ export function ScrollsPage() {
   };
 
   const handleViewResults = (scrollId: string) => {
-    navigate(`/results/${scrollId}`);
+    navigate(`/app/results/${scrollId}`);
   };
 
   const handleEdit = (scroll: Scroll) => {
-    navigate(`/scrolls/${scroll.id}`);
+    navigate(`/app/scrolls/${scroll.id}`);
   };
 
   const handleDelete = async (scroll: Scroll) => {

@@ -68,7 +68,7 @@ export function DatasetsPage() {
   };
 
   const handleDatasetClick = (dataset: Dataset) => {
-    navigate(`/datasets/${dataset.id}`);
+    navigate(`/app/datasets/${dataset.id}`);
   };
 
   // Pagination calculations

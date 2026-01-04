@@ -114,7 +114,7 @@ export function IntroView({
           {isAuthenticated && (
             <button
               className="dashboard-link-button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/app/scrolls')}
             >
               ← Dashboard
             </button>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
+import { Landing } from './pages/Landing'
 import { Auth } from './pages/Auth'
 import { DashboardLayout } from './pages/(dashboard)/Layout'
 import { ScrollsPage } from './pages/(dashboard)/scrolls/page'
@@ -45,34 +46,37 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public landing page */}
+        <Route path="/" element={<Landing />} />
+
         {/* Public route for viewing active scrolls */}
         <Route path="/scroll/:id" element={<PublicScroll />} />
 
         {/* Auth route */}
-        <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/scrolls" replace />} />
+        <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app/scrolls" replace />} />
 
         {/* Results page (requires auth, has its own layout) */}
         {session && (
-          <Route path="/results/:id" element={<Results />} />
+          <Route path="/app/results/:id" element={<Results />} />
         )}
 
         {/* Dashboard routes (requires auth) */}
         {session ? (
-          <Route element={<DashboardLayout session={session} />}>
-            <Route path="/scrolls" element={<ScrollsPage />} />
-            <Route path="/scrolls/:id" element={<EditScrollPage />} />
-            <Route path="/trends" element={<TrendsPage />} />
-            <Route path="/trends/:id" element={<EditTrendPage />} />
-            <Route path="/datasets" element={<DatasetsPage />} />
-            <Route path="/datasets/:id" element={<EditDatasetPage />} />
-            <Route path="/" element={<Navigate to="/scrolls" replace />} />
+          <Route path="/app" element={<DashboardLayout session={session} />}>
+            <Route index element={<Navigate to="/app/scrolls" replace />} />
+            <Route path="scrolls" element={<ScrollsPage />} />
+            <Route path="scrolls/:id" element={<EditScrollPage />} />
+            <Route path="trends" element={<TrendsPage />} />
+            <Route path="trends/:id" element={<EditTrendPage />} />
+            <Route path="datasets" element={<DatasetsPage />} />
+            <Route path="datasets/:id" element={<EditDatasetPage />} />
           </Route>
         ) : (
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/app/*" element={<Navigate to="/auth" replace />} />
         )}
 
-        {/* Catch all - redirect based on auth state */}
-        <Route path="*" element={<Navigate to={session ? "/scrolls" : "/auth"} replace />} />
+        {/* Catch all - redirect to landing page */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

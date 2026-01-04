@@ -209,7 +209,7 @@ export function ModuleResultsView({
         hasNextModule={hasNextModule}
         transitioning={transitioning}
         onContinue={onContinueToNext}
-        onDashboard={() => navigate('/')}
+        onDashboard={() => navigate('/app/scrolls')}
       />
       <header className="public-scroll-header">
         <div className="public-scroll-header-left">
@@ -227,7 +227,7 @@ export function ModuleResultsView({
             {isAuthenticated && (
               <button
                 className="dashboard-link-button"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/app/scrolls')}
               >
                 ← Dashboard
               </button>

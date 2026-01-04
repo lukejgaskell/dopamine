@@ -69,7 +69,7 @@ export function PublicScroll() {
     fetchScrollData,
     ideas,
     onError: handleError,
-    onNavigateToResults: (scrollId) => navigate(`/results/${scrollId}`),
+    onNavigateToResults: (scrollId) => navigate(`/app/results/${scrollId}`),
   })
 
   // Hide intro if step is set (session has started)

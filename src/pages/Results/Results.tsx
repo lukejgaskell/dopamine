@@ -121,7 +121,7 @@ export function Results() {
         <div className="results-page-error">
           <h2>Error</h2>
           <p>{error || 'Failed to load scroll'}</p>
-          <button onClick={() => navigate('/')} className="back-button">
+          <button onClick={() => navigate('/app/scrolls')} className="back-button">
             Back to Dashboard
           </button>
         </div>
@@ -134,7 +134,7 @@ export function Results() {
       <MobileResultsMenu
         isOpen={showMobileMenu}
         onClose={() => setShowMobileMenu(false)}
-        onBack={() => navigate('/scrolls')}
+        onBack={() => navigate('/app/scrolls')}
       />
       <header className="results-page-header">
         <div className="results-page-header-left">
@@ -150,7 +150,7 @@ export function Results() {
         </div>
         <div className="results-page-header-right">
           {/* Desktop button */}
-          <button onClick={() => navigate('/scrolls')} className="back-button results-desktop-only">
+          <button onClick={() => navigate('/app/scrolls')} className="back-button results-desktop-only">
             Back to Scrolls
           </button>
           {/* Mobile hamburger */}
