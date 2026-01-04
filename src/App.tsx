@@ -39,41 +39,37 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
-    return <div className="loading">Loading...</div>
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public landing page */}
+        {/* Public routes - no auth required, no loading state */}
         <Route path="/" element={<Landing />} />
-
-        {/* Public route for viewing active scrolls */}
         <Route path="/scroll/:id" element={<PublicScroll />} />
 
         {/* Auth route */}
-        <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app/scrolls" replace />} />
+        <Route path="/auth" element={
+          loading ? <div className="loading">Loading...</div> :
+          !session ? <Auth /> : <Navigate to="/app/scrolls" replace />
+        } />
 
-        {/* Results page (requires auth, has its own layout) */}
-        {session && (
-          <Route path="/app/results/:id" element={<Results />} />
-        )}
+        {/* Protected routes - show loading while checking auth */}
+        <Route path="/app/results/:id" element={
+          loading ? <div className="loading">Loading...</div> :
+          session ? <Results /> : <Navigate to="/auth" replace />
+        } />
 
-        {/* Dashboard routes (requires auth) */}
-        {session ? (
-          <Route path="/app" element={<DashboardLayout session={session} />}>
-            <Route index element={<Navigate to="/app/scrolls" replace />} />
-            <Route path="scrolls" element={<ScrollsPage />} />
-            <Route path="scrolls/:id" element={<EditScrollPage />} />
-            <Route path="trends" element={<TrendsPage />} />
-            <Route path="trends/:id" element={<EditTrendPage />} />
-            <Route path="datasets" element={<DatasetsPage />} />
-            <Route path="datasets/:id" element={<EditDatasetPage />} />
-          </Route>
-        ) : (
-          <Route path="/app/*" element={<Navigate to="/auth" replace />} />
-        )}
+        <Route path="/app" element={
+          loading ? <div className="loading">Loading...</div> :
+          session ? <DashboardLayout session={session} /> : <Navigate to="/auth" replace />
+        }>
+          <Route index element={<Navigate to="/app/scrolls" replace />} />
+          <Route path="scrolls" element={<ScrollsPage />} />
+          <Route path="scrolls/:id" element={<EditScrollPage />} />
+          <Route path="trends" element={<TrendsPage />} />
+          <Route path="trends/:id" element={<EditTrendPage />} />
+          <Route path="datasets" element={<DatasetsPage />} />
+          <Route path="datasets/:id" element={<EditDatasetPage />} />
+        </Route>
 
         {/* Catch all - redirect to landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
