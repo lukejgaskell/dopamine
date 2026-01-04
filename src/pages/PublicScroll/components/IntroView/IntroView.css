@@ -153,3 +153,74 @@
   background-color: var(--bg-primary);
   border-color: var(--border-color-hover);
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .intro-container {
+    padding: 1rem;
+    align-items: flex-start;
+  }
+
+  .intro-content {
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+
+  .intro-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .intro-content p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .intro-share-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+  }
+
+  .intro-share-section h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .share-link-row {
+    flex-direction: column;
+  }
+
+  .share-link-input {
+    font-size: 0.75rem;
+    padding: 0.625rem;
+  }
+
+  .copy-link-btn {
+    width: 100%;
+    padding: 0.625rem 1rem;
+  }
+
+  .qr-code-box {
+    padding: 0.75rem;
+  }
+
+  .qr-code-box svg {
+    width: 120px !important;
+    height: 120px !important;
+  }
+
+  .qr-actions {
+    width: 100%;
+  }
+
+  .qr-btn {
+    flex: 1;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .start-session-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+  }
+}

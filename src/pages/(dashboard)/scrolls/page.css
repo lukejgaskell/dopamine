@@ -257,8 +257,24 @@
 }
 
 @media (max-width: 768px) {
+  .scrolls-container {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
   .scrolls-content {
     padding: 1rem;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .scrolls-table {
+    width: 100%;
+  }
+
+  .scrolls-table-body {
+    overflow-x: hidden;
   }
 
   .scrolls-table-header {
@@ -270,12 +286,15 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .name-cell {
     width: 100%;
     font-size: 1rem;
     font-weight: 600;
+    min-width: 0;
   }
 
   .status-cell {
@@ -290,16 +309,18 @@
     width: auto;
     font-size: 0.8125rem;
     justify-content: flex-end;
+    min-width: 0;
   }
 
   .actions-cell {
     width: 100%;
-    min-width: 100%;
-    gap: 0.75rem;
+    min-width: 0;
+    gap: 0.5rem;
   }
 
   .action-button {
     flex: 1;
     min-width: 0;
+    max-width: none;
   }
 }

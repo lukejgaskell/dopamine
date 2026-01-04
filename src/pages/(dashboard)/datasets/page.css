@@ -155,6 +155,7 @@
 @media (max-width: 768px) {
   .datasets-content {
     padding: 1rem;
+    margin: 0;
   }
 
   .datasets-table-header {

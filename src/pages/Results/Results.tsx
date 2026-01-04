@@ -7,6 +7,40 @@ import { ScrollResults } from '@/pages/PublicScroll/components/ScrollResults'
 import { Logo } from '@/components/Logo'
 import './Results.css'
 
+type MobileMenuProps = {
+  isOpen: boolean
+  onClose: () => void
+  onBack: () => void
+}
+
+function MobileResultsMenu({ isOpen, onClose, onBack }: MobileMenuProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="results-mobile-menu-overlay" onClick={onClose}>
+      <div className="results-mobile-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="results-mobile-menu-header">
+          <h3>Menu</h3>
+          <button className="results-mobile-menu-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="results-mobile-menu-content">
+          <button
+            className="results-mobile-menu-item"
+            onClick={() => {
+              onBack()
+              onClose()
+            }}
+          >
+            ← Back to Scrolls
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Results() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -14,6 +48,7 @@ export function Results() {
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +131,11 @@ export function Results() {
 
   return (
     <div className="results-page-container">
+      <MobileResultsMenu
+        isOpen={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+        onBack={() => navigate('/scrolls')}
+      />
       <header className="results-page-header">
         <div className="results-page-header-left">
           <Logo size="small" />
@@ -109,8 +149,20 @@ export function Results() {
           </div>
         </div>
         <div className="results-page-header-right">
-          <button onClick={() => navigate('/scrolls')} className="back-button">
+          {/* Desktop button */}
+          <button onClick={() => navigate('/scrolls')} className="back-button results-desktop-only">
             Back to Scrolls
+          </button>
+          {/* Mobile hamburger */}
+          <button
+            className="results-mobile-menu-btn"
+            onClick={() => setShowMobileMenu(true)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
           </button>
         </div>
       </header>

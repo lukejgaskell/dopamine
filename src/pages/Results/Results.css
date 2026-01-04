@@ -151,3 +151,134 @@
   height: 100%;
   color: var(--text-secondary);
 }
+
+/* Mobile menu button */
+.results-mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+/* Mobile menu overlay */
+.results-mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: resultsFadeIn 0.2s ease-out;
+}
+
+@keyframes resultsFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.results-mobile-menu {
+  background-color: var(--bg-card);
+  width: 80%;
+  max-width: 320px;
+  height: 100%;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: resultsSlideIn 0.3s ease-out;
+}
+
+@keyframes resultsSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.results-mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.results-mobile-menu-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.results-mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-mobile-menu-content {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.results-mobile-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.results-mobile-menu-item:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color-hover);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .results-page-header {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .results-page-title {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .results-page-status {
+    display: none;
+  }
+
+  .results-desktop-only {
+    display: none;
+  }
+
+  .results-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

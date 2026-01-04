@@ -50,14 +50,43 @@
 .module-brainstorm .new-idea-fixed {
   position: sticky;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
+  left: auto;
+  transform: none;
+  width: 100%;
   max-width: 600px;
+  margin: 0 auto;
   padding: 1rem 0;
   background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
   backdrop-filter: blur(8px);
   z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .brainstorm-ideas {
+    width: 100%;
+    padding: 1rem;
+    padding-bottom: 0;
+  }
+
+  .module-brainstorm .new-idea-fixed {
+    max-width: none;
+    padding: 1rem;
+    padding-top: 1rem;
+  }
+
+  .dataset-ideas {
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .module-prompt {
+    margin: 1rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .module-prompt p {
+    font-size: 1rem;
+  }
 }
 
 .dataset-ideas {

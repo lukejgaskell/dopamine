@@ -139,3 +139,53 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+@media (max-width: 768px) {
+  .results-view {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .results-title {
+    font-size: 1.5rem;
+  }
+
+  .results-list {
+    width: 100%;
+  }
+
+  .results-card {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .results-rank {
+    min-width: 40px;
+  }
+
+  .rank-number {
+    font-size: 1.5rem;
+  }
+
+  .results-card:nth-child(1) .rank-number {
+    font-size: 1.75rem;
+  }
+
+  .results-card:nth-child(2) .rank-number,
+  .results-card:nth-child(3) .rank-number {
+    font-size: 1.5rem;
+  }
+
+  .results-text {
+    font-size: 1rem;
+  }
+
+  .results-votes {
+    min-width: 50px;
+  }
+
+  .results-vote-count {
+    font-size: 1.5rem;
+  }
+}

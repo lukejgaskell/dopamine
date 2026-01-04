@@ -12,10 +12,6 @@ type ScrollResultsProps = {
 export function ScrollResults({ modules, ideas }: ScrollResultsProps) {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(0)
 
-  // Debug: log what we're receiving
-  console.log('ScrollResults - modules:', modules)
-  console.log('ScrollResults - ideas:', ideas)
-
   // Get the active dataset_id for a module by looking at the last dataset builder before it
   const getActiveDatasetId = (moduleIndex: number): string | null => {
     for (let i = moduleIndex; i >= 0; i--) {
@@ -52,18 +48,36 @@ export function ScrollResults({ modules, ideas }: ScrollResultsProps) {
   return (
     <div className="scroll-results">
       {modules.length > 1 && (
-        <div className="module-tabs">
-          {modules.map((module, index) => (
-            <button
-              key={index}
-              className={`module-tab ${selectedModuleIndex === index ? 'active' : ''}`}
-              onClick={() => setSelectedModuleIndex(index)}
+        <>
+          {/* Desktop tabs */}
+          <div className="module-tabs module-tabs-desktop">
+            {modules.map((module, index) => (
+              <button
+                key={index}
+                className={`module-tab ${selectedModuleIndex === index ? 'active' : ''}`}
+                onClick={() => setSelectedModuleIndex(index)}
+              >
+                <span className="tab-number">{index + 1}</span>
+                <span className="tab-name">{getModuleTypeName(module.type)}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile dropdown */}
+          <div className="module-tabs module-tabs-mobile">
+            <select
+              className="module-select"
+              value={selectedModuleIndex}
+              onChange={(e) => setSelectedModuleIndex(Number(e.target.value))}
             >
-              <span className="tab-number">{index + 1}</span>
-              <span className="tab-name">{getModuleTypeName(module.type)}</span>
-            </button>
-          ))}
-        </div>
+              {modules.map((module, index) => (
+                <option key={index} value={index}>
+                  {index + 1}. {getModuleTypeName(module.type)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
       )}
 
       <div className="results-content">

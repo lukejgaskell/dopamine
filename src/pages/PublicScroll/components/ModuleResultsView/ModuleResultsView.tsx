@@ -7,6 +7,70 @@ import "./ModuleResultsView.css";
 
 const ITEMS_PER_PAGE = 20;
 
+type MobileMenuProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  isAuthenticated: boolean;
+  isOwner: boolean;
+  hasNextModule: boolean;
+  transitioning: boolean;
+  onContinue: () => Promise<void>;
+  onDashboard: () => void;
+};
+
+function MobileResultsMenu({
+  isOpen,
+  onClose,
+  isAuthenticated,
+  isOwner,
+  hasNextModule,
+  transitioning,
+  onContinue,
+  onDashboard,
+}: MobileMenuProps) {
+  if (!isOpen) return null;
+
+  const handleContinue = async () => {
+    await onContinue();
+    onClose();
+  };
+
+  return (
+    <div className="mobile-results-menu-overlay" onClick={onClose}>
+      <div className="mobile-results-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-results-menu-header">
+          <h3>Menu</h3>
+          <button className="mobile-results-menu-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="mobile-results-menu-content">
+          {isAuthenticated && (
+            <button
+              className="mobile-results-menu-item"
+              onClick={() => {
+                onDashboard();
+                onClose();
+              }}
+            >
+              ← Dashboard
+            </button>
+          )}
+          {isOwner && hasNextModule && (
+            <button
+              className="mobile-results-menu-item primary"
+              onClick={handleContinue}
+              disabled={transitioning}
+            >
+              {transitioning ? "..." : "Continue to Next"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type ModuleResultsViewProps = {
   scroll: Scroll;
   currentModuleIndex: number;
@@ -36,6 +100,7 @@ export function ModuleResultsView({
 }: ModuleResultsViewProps) {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const currentModule = scroll.modules[currentModuleIndex] as any;
   const moduleResults = currentModule.results || {};
 
@@ -136,6 +201,16 @@ export function ModuleResultsView({
 
   return (
     <div className="public-scroll-container">
+      <MobileResultsMenu
+        isOpen={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+        isAuthenticated={isAuthenticated}
+        isOwner={isOwner}
+        hasNextModule={hasNextModule}
+        transitioning={transitioning}
+        onContinue={onContinueToNext}
+        onDashboard={() => navigate('/')}
+      />
       <header className="public-scroll-header">
         <div className="public-scroll-header-left">
           <Logo size="small" />
@@ -147,21 +222,37 @@ export function ModuleResultsView({
           </div>
         </div>
         <div className="public-scroll-header-right">
-          {isAuthenticated && (
+          {/* Desktop buttons */}
+          <div className="header-desktop-buttons">
+            {isAuthenticated && (
+              <button
+                className="dashboard-link-button"
+                onClick={() => navigate('/')}
+              >
+                ← Dashboard
+              </button>
+            )}
+            {isOwner && hasNextModule && (
+              <button
+                className="nav-btn next"
+                onClick={onContinueToNext}
+                disabled={transitioning}
+              >
+                {transitioning ? "..." : "Continue"}
+              </button>
+            )}
+          </div>
+          {/* Mobile hamburger - only for hosts */}
+          {isOwner && (
             <button
-              className="dashboard-link-button"
-              onClick={() => navigate('/')}
+              className="header-mobile-menu-btn"
+              onClick={() => setShowMobileMenu(true)}
             >
-              ← Dashboard
-            </button>
-          )}
-          {isOwner && hasNextModule && (
-            <button
-              className="nav-btn next"
-              onClick={onContinueToNext}
-              disabled={transitioning}
-            >
-              {transitioning ? "..." : "Continue"}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
             </button>
           )}
         </div>
